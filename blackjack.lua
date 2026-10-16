@@ -451,8 +451,9 @@ local function adjust_bet(delta)
     sys.toast("Bailout: +$500 chips")
   end
   local max_allowed = math.min(MAX_BET, bankroll)
-  base_bet = clamp(base_bet + delta, MIN_BET, max_allowed)
+  base_bet = I(clamp(base_bet + delta, MIN_BET, max_allowed))
   sfx()
+  rebuild_buttons()
   draw_screen()
 end
 
@@ -465,7 +466,7 @@ rebuild_buttons = function()
       { label = "-10",   key = "-", enabled = true, fn = function() adjust_bet(-10) end },
       { label = "+10",   key = "+", enabled = true, fn = function() adjust_bet(10) end },
       { label = "+50",   key = "2", enabled = true, fn = function() adjust_bet(50) end },
-      { label = "MAX",   key = "x", enabled = true, fn = function() base_bet = math.min(MAX_BET, math.max(MIN_BET, bankroll)); sfx(); draw_screen() end },
+      { label = "MAX",   key = "x", enabled = true, fn = function() base_bet = I(math.min(MAX_BET, math.max(MIN_BET, bankroll))); sfx(); rebuild_buttons(); draw_screen() end },
       { label = "DEAL",  key = "d", primary = true, enabled = true, fn = start_deal },
     }
     focus_idx = 6
@@ -485,11 +486,12 @@ rebuild_buttons = function()
     }
     focus_idx = 1
   elseif state == "done" then
+    local deal_amt = I(clamp(base_bet, MIN_BET, math.max(MIN_BET, bankroll)))
     active_btns = {
       { label = "BET [B]",      key = "b", enabled = true, fn = function() state = "betting"; rebuild_buttons(); draw_screen() end },
       { label = "-10",          key = "-", enabled = bankroll >= MIN_BET + 10, fn = function() adjust_bet(-10) end },
       { label = "+10",          key = "+", enabled = bankroll >= base_bet + 10, fn = function() adjust_bet(10) end },
-      { label = "DEAL $" .. tostring(clamp(base_bet, MIN_BET, math.max(MIN_BET, bankroll))), key = "d", primary = true, enabled = true, fn = start_deal },
+      { label = string.format("DEAL $%d", deal_amt), key = "d", primary = true, enabled = true, fn = start_deal },
     }
     focus_idx = 4
   end
@@ -809,14 +811,14 @@ function app.on_open(w, h)
   W = I(w or 320)
   H = I(h or 208)
 
-  bankroll  = tonumber(store.get("bank", START_BANK)) or START_BANK
-  best_bank = tonumber(store.get("best", START_BANK)) or START_BANK
-  base_bet  = tonumber(store.get("bet", 25)) or 25
-  wins      = tonumber(store.get("wins", 0)) or 0
-  rounds    = tonumber(store.get("rounds", 0)) or 0
+  bankroll  = I(tonumber(store.get("bank", START_BANK)) or START_BANK)
+  best_bank = I(tonumber(store.get("best", START_BANK)) or START_BANK)
+  base_bet  = I(tonumber(store.get("bet", 25)) or 25)
+  wins      = I(tonumber(store.get("wins", 0)) or 0)
+  rounds    = I(tonumber(store.get("rounds", 0)) or 0)
 
   if bankroll < MIN_BET then bankroll = START_BANK end
-  base_bet = clamp(base_bet, MIN_BET, math.min(MAX_BET, bankroll))
+  base_bet = I(clamp(base_bet, MIN_BET, math.min(MAX_BET, bankroll)))
 
   cv = ui.canvas(W, H)
   cv:pos(0, 0)
