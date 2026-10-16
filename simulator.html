@@ -660,71 +660,80 @@ function draw_screen() {
   const right_str = `PEAK $${best_bank} ${sound_on ? "" : "[M]"}`;
   cv.text(Math.max(I(W * 0.68), W - text_w(right_str, 12) - 6), 3, right_str, C.sub, 12);
 
-  const cw = clamp(I(W * 0.115), 30, 42);
-  const ch = clamp(I(table_h * 0.34), 40, 56);
-  const overlap = I(cw * 0.62);
+  const cw = 34;
+  const ch = clamp(I(table_h * 0.29), 42, 48);
+  const overlap = 20;
 
   if (state === "betting") {
-    const mid_y = top_h + I(table_h / 2);
-    cv.rect(I(W / 2) - 96, top_h + 10, 192, table_h - 20, 0x082016, true, 8);
-    cv.rect(I(W / 2) - 96, top_h + 10, 192, table_h - 20, COL_FELT_LINE, false, 8);
-    draw_playing_card(I(W / 2) - 82, top_h + 18, 30, 42, { r: 1, s: 1 }, false);
-    draw_playing_card(I(W / 2) + 52, top_h + 18, 30, 42, { r: 13, s: 2 }, false);
+    const pad_x = 12, box_w = W - pad_x * 2;
+    cv.rect(pad_x, top_h + 8, box_w, table_h - 16, 0x082016, true, 8);
+    cv.rect(pad_x, top_h + 8, box_w, table_h - 16, COL_FELT_LINE, false, 8);
+    draw_playing_card(pad_x + 10, top_h + 18, 30, 42, { r: 1, s: 1 }, false);
+    draw_playing_card(W - pad_x - 40, top_h + 18, 30, 42, { r: 13, s: 2 }, false);
 
     const title = "BLACKJACK 21";
-    cv.text(I((W - text_w(title, 16)) / 2), top_h + 16, title, COL_GOLD, 16);
-    const sub = "3:2 Blackjack  ·  Dealer stands 17";
-    cv.text(I((W - text_w(sub, 12)) / 2), top_h + 36, sub, C.sub, 12);
+    cv.text(I((W - text_w(title, 16)) / 2), top_h + 18, title, COL_GOLD, 16);
+    const sub = "3:2 Payout  ·  Stands on 17";
+    cv.text(I((W - text_w(sub, 12)) / 2), top_h + 42, sub, C.sub, 12);
 
     const wager_lbl = `WAGER: $${base_bet}`;
     const ww = text_w(wager_lbl, 16);
-    cv.rect(I((W - ww) / 2) - 12, mid_y + 2, ww + 24, 24, COL_BTN_ACT, true, 6);
-    cv.rect(I((W - ww) / 2) - 12, mid_y + 2, ww + 24, 24, C.accent, false, 6);
-    cv.text(I((W - ww) / 2), mid_y + 5, wager_lbl, C.text, 16);
+    const pill_y = top_h + 74;
+    cv.rect(I((W - ww) / 2) - 14, pill_y, ww + 28, 26, COL_BTN_ACT, true, 6);
+    cv.rect(I((W - ww) / 2) - 14, pill_y, ww + 28, 26, C.accent, false, 6);
+    cv.text(I((W - ww) / 2), pill_y + 4, wager_lbl, C.text, 16);
 
-    const hint = "Tap buttons or [Up/Down] Bet  [D/Enter] Deal";
+    const hint = "Tap buttons or [Up/Down] Bet  [D] Deal";
     cv.text(I((W - text_w(hint, 12)) / 2), top_h + table_h - 26, hint, C.sub, 12);
   } else {
-    const dealer_y = top_h + 6, d_cards_y = dealer_y + 15;
-    let d_label;
-    if (dealer_hide) d_label = `DEALER: ${card_val(dealer_hand[0].r)} + ?`;
+    const d_cards_y = top_h + 6, cards_cx = I(W * 0.58);
+    let d_val_str;
+    if (dealer_hide) d_val_str = `${card_val(dealer_hand[0].r)} + ?`;
     else {
       const [dtot, , dbj] = eval_hand(dealer_hand);
-      d_label = dbj ? "DEALER: 21 (BJ)" : `DEALER: ${dtot}`;
+      d_val_str = dbj ? "21 (BJ)" : `${dtot}`;
     }
-    cv.text(10, dealer_y, d_label, C.sub, 12);
-    draw_hand_cards(dealer_hand, I(W / 2), d_cards_y, cw, ch, overlap, dealer_hide);
+    cv.text(12, d_cards_y + 6, "DEALER", C.sub, 12);
+    cv.text(12, d_cards_y + 22, d_val_str, C.text, 14);
+    draw_hand_cards(dealer_hand, cards_cx, d_cards_y, cw, ch, overlap, dealer_hide);
 
-    const p_cards_y = top_h + table_h - ch - 6, p_label_y = p_cards_y - 15;
+    const p_cards_y = top_h + table_h - ch - 6;
     if (hands.length === 1) {
       const h = hands[0];
       const [ptot, psoft, pbj] = eval_hand(h.cards);
-      const p_str = pbj ? "YOU: 21 (BLACKJACK!)" : (psoft && ptot <= 21 && state === "player" ? `YOU: ${ptot - 10} / ${ptot}` : `YOU: ${ptot}`);
+      const p_val_str = pbj ? "21 (BJ!)" : (psoft && ptot <= 21 && state === "player" ? `${ptot - 10} / ${ptot}` : `${ptot}`);
       const p_col = h.status === "bust" ? C.bad : (pbj ? COL_GOLD : C.text);
-      cv.text(10, p_label_y, p_str, p_col, 12);
-      draw_hand_cards(h.cards, I(W / 2), p_cards_y, cw, ch, overlap, false);
+      cv.text(12, p_cards_y + 6, "PLAYER", C.sub, 12);
+      cv.text(12, p_cards_y + 22, p_val_str, p_col, 14);
+      draw_hand_cards(h.cards, cards_cx, p_cards_y, cw, ch, overlap, false);
     } else {
-      const split_overlap = Math.max(14, I(cw * 0.48));
+      const split_overlap = 16;
       for (let idx = 0; idx < 2; idx++) {
         const h = hands[idx];
-        const h_cx = idx === 0 ? I(W * 0.27) : I(W * 0.73);
+        const h_cx = idx === 0 ? I(W * 0.28) : I(W * 0.74);
         const is_active = state === "player" && cur_hand === idx + 1;
-        if (is_active) cv.rect(h_cx - 64, p_cards_y - 16, 128, ch + 19, C.accent, false, 5);
+        if (is_active) cv.rect(h_cx - 60, p_cards_y - 2, 120, ch + 4, C.accent, false, 5);
         const [ptot] = eval_hand(h.cards);
         const tag = h.result || (h.status === "bust" ? "BUST" : `$${h.bet}`);
         const lbl = `H${idx + 1}:${ptot} (${tag})`;
-        cv.text(h_cx - I(text_w(lbl, 12) / 2), p_label_y, lbl, is_active ? C.accent : (h.status === "bust" ? C.bad : C.text), 12);
+        cv.text(h_cx - I(text_w(lbl, 12) / 2), p_cards_y - 14, lbl, is_active ? C.accent : (h.status === "bust" ? C.bad : C.text), 12);
         draw_hand_cards(h.cards, h_cx, p_cards_y, cw, ch, split_overlap, false);
       }
     }
 
+    const mid_top = d_cards_y + ch + 3;
+    const mid_bot = hands.length > 1 ? (p_cards_y - 16) : (p_cards_y - 3);
+    const mid_cy = I((mid_top + mid_bot) / 2);
+
     if (state === "done" && banner_title) {
-      const bw = Math.min(W - 24, Math.max(156, text_w(banner_title, 14) + 32)), bh = 34;
-      const bx = I((W - bw) / 2), by = top_h + I((table_h - bh) / 2);
+      const bw = Math.min(W - 24, Math.max(164, text_w(banner_title, 14) + 32)), bh = 32;
+      const bx = I((W - bw) / 2), by = I(mid_cy - bh / 2);
       cv.rect(bx, by, bw, bh, 0x0D131A, true, 6);
       cv.rect(bx, by, bw, bh, banner_col, false, 6);
-      cv.text(I((W - text_w(banner_title, 14)) / 2), by + 3, banner_title, banner_col, 14);
-      cv.text(I((W - text_w(banner_sub, 12)) / 2), by + 18, banner_sub, C.text, 12);
+      cv.text(I((W - text_w(banner_title, 14)) / 2), by + 2, banner_title, banner_col, 14);
+      cv.text(I((W - text_w(banner_sub, 12)) / 2), by + 17, banner_sub, C.text, 12);
+    } else {
+      cv.line(24, mid_cy, W - 24, mid_cy, COL_FELT_LINE, 1);
     }
   }
 

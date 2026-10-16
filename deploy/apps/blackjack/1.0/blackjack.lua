@@ -644,99 +644,109 @@ draw_screen = function()
   cv:text( math.max(I(W * 0.68), W - rw - 6), 3, right_str, C.sub, 12)
 
   -- Adaptive card sizing based on available height
-  local cw = clamp(I(W * 0.115), 30, 42)
-  local ch = clamp(I(table_h * 0.34), 40, 56)
-  local overlap = I(cw * 0.62)
+  local cw = 34
+  local ch = clamp(I(table_h * 0.29), 42, 48)
+  local overlap = 20
 
   if state == "betting" then
-    -- Betting screen layout
-    local mid_y = top_h + I(table_h / 2)
-    cv:rect(I(W / 2) - 96, top_h + 10, 192, table_h - 20, 0x082016, true, 8)
-    cv:rect(I(W / 2) - 96, top_h + 10, 192, table_h - 20, COL_FELT_LINE, false, 8)
+    -- Betting screen layout: wide inner frame so cards & text never overlap
+    local pad_x = 12
+    local box_w = W - pad_x * 2
+    cv:rect(pad_x, top_h + 8, box_w, table_h - 16, 0x082016, true, 8)
+    cv:rect(pad_x, top_h + 8, box_w, table_h - 16, COL_FELT_LINE, false, 8)
 
-    -- Decorative mini cards
-    draw_playing_card(I(W / 2) - 82, top_h + 18, 30, 42, { r = 1, s = 1 }, false)
-    draw_playing_card(I(W / 2) + 52, top_h + 18, 30, 42, { r = 13, s = 2 }, false)
+    -- Decorative mini cards placed at far left & far right inside frame (x=22..52 and x=W-52..W-22)
+    draw_playing_card(pad_x + 10, top_h + 18, 30, 42, { r = 1, s = 1 }, false)
+    draw_playing_card(W - pad_x - 40, top_h + 18, 30, 42, { r = 13, s = 2 }, false)
 
+    -- Title & subtitle centered in the 216px clear zone between the two cards
     local title = "BLACKJACK 21"
-    cv:text(I((W - ui.text_w(title, 16)) / 2), top_h + 16, title, COL_GOLD, 16)
+    cv:text(I((W - ui.text_w(title, 16)) / 2), top_h + 18, title, COL_GOLD, 16)
 
-    local sub = "3:2 Blackjack  ·  Dealer stands 17"
-    cv:text(I((W - ui.text_w(sub, 12)) / 2), top_h + 36, sub, C.sub, 12)
+    local sub = "3:2 Payout  ·  Stands on 17"
+    cv:text(I((W - ui.text_w(sub, 12)) / 2), top_h + 42, sub, C.sub, 12)
 
-    -- Chip badge
+    -- Chip wager pill placed below the cards & subtitle
     local wager_lbl = string.format("WAGER: $%d", base_bet)
     local ww = ui.text_w(wager_lbl, 16)
-    cv:rect(I((W - ww) / 2) - 12, mid_y + 2, ww + 24, 24, COL_BTN_ACT, true, 6)
-    cv:rect(I((W - ww) / 2) - 12, mid_y + 2, ww + 24, 24, C.accent, false, 6)
-    cv:text(I((W - ww) / 2), mid_y + 5, wager_lbl, C.text, 16)
+    local pill_y = top_h + 74
+    cv:rect(I((W - ww) / 2) - 14, pill_y, ww + 28, 26, COL_BTN_ACT, true, 6)
+    cv:rect(I((W - ww) / 2) - 14, pill_y, ww + 28, 26, C.accent, false, 6)
+    cv:text(I((W - ww) / 2), pill_y + 4, wager_lbl, C.text, 16)
 
-    local hint = "Tap buttons or [Up/Down] Bet  [D/Enter] Deal"
+    local hint = "Tap buttons or [Up/Down] Bet  [D] Deal"
     cv:text(I((W - ui.text_w(hint, 12)) / 2), top_h + table_h - 26, hint, C.sub, 12)
   else
-    -- Active table layout: Dealer on top, Player on bottom
-    local dealer_y = top_h + 6
-    local d_cards_y = dealer_y + 15
+    -- Active table layout:
+    -- 1. Dealer row at top (y = top_h + 6 .. top_h + 6 + ch)
+    local d_cards_y = top_h + 6
+    local cards_cx = I(W * 0.58)
 
-    -- Dealer header badge
-    local d_label
+    local d_val_str
     if dealer_hide then
       local up_val = card_val(dealer_hand[1].r)
-      d_label = string.format("DEALER: %d + ?", up_val)
+      d_val_str = string.format("%d + ?", up_val)
     else
       local dtot, _, dbj = eval_hand(dealer_hand)
-      d_label = dbj and "DEALER: 21 (BJ)" or string.format("DEALER: %d", dtot)
+      d_val_str = dbj and "21 (BJ)" or tostring(dtot)
     end
-    cv:text(10, dealer_y, d_label, C.sub, 12)
-    draw_hand_cards(dealer_hand, I(W / 2), d_cards_y, cw, ch, overlap, dealer_hide)
+    cv:text(12, d_cards_y + 6, "DEALER", C.sub, 12)
+    cv:text(12, d_cards_y + 22, d_val_str, C.text, 14)
+    draw_hand_cards(dealer_hand, cards_cx, d_cards_y, cw, ch, overlap, dealer_hide)
 
-    -- Player hand(s)
+    -- 2. Player row at bottom (y = top_h + table_h - ch - 6)
     local p_cards_y = top_h + table_h - ch - 6
-    local p_label_y = p_cards_y - 15
 
     if #hands == 1 then
       local h = hands[1]
       local ptot, psoft, pbj = eval_hand(h.cards)
-      local p_str
+      local p_val_str
       if pbj then
-        p_str = "YOU: 21 (BLACKJACK!)"
+        p_val_str = "21 (BJ!)"
       elseif psoft and ptot <= 21 and state == "player" then
-        p_str = string.format("YOU: %d / %d", ptot - 10, ptot)
+        p_val_str = string.format("%d / %d", ptot - 10, ptot)
       else
-        p_str = string.format("YOU: %d", ptot)
+        p_val_str = tostring(ptot)
       end
       local p_col = h.status == "bust" and C.bad or (pbj and COL_GOLD or C.text)
-      cv:text(10, p_label_y, p_str, p_col, 12)
-      draw_hand_cards(h.cards, I(W / 2), p_cards_y, cw, ch, overlap, false)
+      cv:text(12, p_cards_y + 6, "PLAYER", C.sub, 12)
+      cv:text(12, p_cards_y + 22, p_val_str, p_col, 14)
+      draw_hand_cards(h.cards, cards_cx, p_cards_y, cw, ch, overlap, false)
     else
       -- Split hands side-by-side
-      local split_overlap = math.max(14, I(cw * 0.48))
+      local split_overlap = 16
       for idx = 1, 2 do
         local h = hands[idx]
-        local h_cx = idx == 1 and I(W * 0.27) or I(W * 0.73)
+        local h_cx = idx == 1 and I(W * 0.28) or I(W * 0.74)
         local is_active = (state == "player" and cur_hand == idx)
         if is_active then
-          cv:rect(h_cx - 64, p_cards_y - 16, 128, ch + 19, C.accent, false, 5)
+          cv:rect(h_cx - 60, p_cards_y - 2, 120, ch + 4, C.accent, false, 5)
         end
         local ptot = eval_hand(h.cards)
         local tag = h.result or (h.status == "bust" and "BUST" or string.format("$%d", h.bet))
         local lbl = string.format("H%d:%d (%s)", idx, ptot, tag)
         local lcol = is_active and C.accent or (h.status == "bust" and C.bad or C.text)
-        cv:text(h_cx - I(ui.text_w(lbl, 12) / 2), p_label_y, lbl, lcol, 12)
+        cv:text(h_cx - I(ui.text_w(lbl, 12) / 2), p_cards_y - 14, lbl, lcol, 12)
         draw_hand_cards(h.cards, h_cx, p_cards_y, cw, ch, split_overlap, false)
       end
     end
 
-    -- Outcome banner overlay when round is finished
+    -- 3. Dedicated middle strip between dealer cards and player cards
+    local mid_top = d_cards_y + ch + 3
+    local mid_bot = (#hands > 1) and (p_cards_y - 16) or (p_cards_y - 3)
+    local mid_cy = I((mid_top + mid_bot) / 2)
+
     if state == "done" and banner_title ~= "" then
-      local bw = math.min(W - 24, math.max(156, ui.text_w(banner_title, 14) + 32))
-      local bh = 34
+      local bw = math.min(W - 24, math.max(164, ui.text_w(banner_title, 14) + 32))
+      local bh = 32
       local bx = I((W - bw) / 2)
-      local by = top_h + I((table_h - bh) / 2)
+      local by = I(mid_cy - bh / 2)
       cv:rect(bx, by, bw, bh, 0x0D131A, true, 6)
       cv:rect(bx, by, bw, bh, banner_col, false, 6)
-      cv:text(I((W - ui.text_w(banner_title, 14)) / 2), by + 3, banner_title, banner_col, 14)
-      cv:text(I((W - ui.text_w(banner_sub, 12)) / 2), by + 18, banner_sub, C.text, 12)
+      cv:text(I((W - ui.text_w(banner_title, 14)) / 2), by + 2, banner_title, banner_col, 14)
+      cv:text(I((W - ui.text_w(banner_sub, 12)) / 2), by + 17, banner_sub, C.text, 12)
+    else
+      cv:line(24, mid_cy, W - 24, mid_cy, COL_FELT_LINE, 1)
     end
   end
 
