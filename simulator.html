@@ -317,7 +317,7 @@
   <div class="screen-wrap" id="screen-wrap">
     <div class="wada-bar">
       <span class="back">&lt; Apps</span>
-      <span style="font-weight:700;">Blackjack v1.2.1</span>
+      <span style="font-weight:700;">Blackjack v1.2.2</span>
       <span class="sys">CH 0 · 100%</span>
     </div>
     <canvas id="screen" width="320" height="208"></canvas>
@@ -520,8 +520,10 @@ function compute_layout() {
     dev_name = "T-Display P4 LCD"; is_p4 = true; s2 = true;
   } else if (l >= 700 || s >= 460) {
     dev_name = "Large HD"; is_p4 = false; s2 = true;
+  } else if ((portrait && aspect > 1.9 && s <= 300) || is_p4) {
+    dev_name = "T-Display P4"; is_p4 = true; s2 = false;
   } else {
-    dev_name = (W >= 440 && H < 320) ? "Wide Compact" : ((portrait && aspect > 1.9 && s <= 300) ? "T-Display P4" : ((portrait && W <= 280) ? "Compact Portrait" : "T-Deck"));
+    dev_name = (W >= 440 && H < 320) ? "Wide Compact" : ((portrait && W <= 280) ? "Compact Portrait" : "T-Deck");
     is_p4 = false; s2 = false;
   }
 
@@ -531,16 +533,24 @@ function compute_layout() {
 
   if (s2) {
     top_h = I(Math.max(lh_md + 16, 40));
-    bot_h = portrait ? I(Math.max(lh_md + 42, 72)) : I(Math.max(lh_md + 26, 54));
     pad = (portrait || is_p4) ? 22 : 14; gap = 8;
+    if (is_p4 && portrait) {
+      bot_h = 114;
+    } else {
+      bot_h = portrait ? I(Math.max(lh_md + 42, 72)) : I(Math.max(lh_md + 26, 54));
+    }
   } else {
     top_h = I(Math.max(lh_sm + 4, 20));
-    bot_h = I(Math.max(lh_sm + 14, 30));
     pad = 6; gap = 4;
+    if (is_p4 && portrait) {
+      bot_h = 70;
+    } else {
+      bot_h = I(Math.max(lh_sm + 14, 30));
+    }
   }
   tbl_h = Math.max(80, H - top_h - bot_h);
 
-  if (is_p4 && portrait) {
+  if (s2 && is_p4 && portrait) {
     cw = I(clamp(W * 0.175, 88, 104)); ch = I(clamp(cw * 1.40, 122, 148));
     ov = I(cw * 0.55); s_ov = I(cw * 0.38); p_sm = 6; p_lg = 14;
   } else if (s2) {
@@ -750,23 +760,23 @@ function adjust_bet(delta) {
 }
 
 function build_btns() {
-  const c = (W < 280);
+  const c = (W < 280) && !is_p4;
   if (state === "betting") {
     btns = [
-      { label: "-50", enabled: true, fn: () => adjust_bet(-50) },
-      { label: "-10", enabled: true, fn: () => adjust_bet(-10) },
-      { label: "+10", enabled: true, fn: () => adjust_bet(10) },
-      { label: "+50", enabled: true, fn: () => adjust_bet(50) },
-      { label: "MAX", enabled: true, fn: () => { base_bet = I(Math.min(MAX_BET, Math.max(MIN_BET, bank))); sfx("chip"); build_btns(); draw_screen(); } },
-      { label: "DEAL", primary: true, enabled: true, fn: start_deal }
+      { label: "-50", enabled: true, fn: () => adjust_bet(-50), row: 1 },
+      { label: "-10", enabled: true, fn: () => adjust_bet(-10), row: 1 },
+      { label: "+10", enabled: true, fn: () => adjust_bet(10), row: 1 },
+      { label: "+50", enabled: true, fn: () => adjust_bet(50), row: 1 },
+      { label: "MAX", enabled: true, fn: () => { base_bet = I(Math.min(MAX_BET, Math.max(MIN_BET, bank))); sfx("chip"); build_btns(); draw_screen(); }, row: 2 },
+      { label: "DEAL", primary: true, enabled: true, fn: start_deal, row: 2 }
     ];
     f_idx = 6;
   } else if (state === "player") {
     btns = [
-      { label: c ? "HIT" : "HIT [H]", primary: true, enabled: true, fn: do_hit },
-      { label: c ? "STAND" : "STAND [S]", enabled: true, fn: do_stand },
-      { label: c ? "DBL" : "DBL [D]", enabled: can_double(), fn: do_double },
-      { label: c ? "SPLIT" : "SPLIT [P]", enabled: can_split(), fn: do_split }
+      { label: c ? "HIT" : "HIT [H]", primary: true, enabled: true, fn: do_hit, row: 1 },
+      { label: c ? "STAND" : "STAND [S]", enabled: true, fn: do_stand, row: 1 },
+      { label: c ? "DBL" : "DBL [D]", enabled: can_double(), fn: do_double, row: 2 },
+      { label: c ? "SPLIT" : "SPLIT [P]", enabled: can_split(), fn: do_split, row: 2 }
     ];
     f_idx = 1;
   } else if (state === "dealer") {
@@ -775,10 +785,10 @@ function build_btns() {
   } else if (state === "done") {
     const amt = I(clamp(base_bet, MIN_BET, Math.max(MIN_BET, bank)));
     btns = [
-      { label: c ? "BET" : "BET [B]", enabled: true, fn: () => { state = "betting"; build_btns(); draw_screen(); } },
-      { label: "-10", enabled: bank >= MIN_BET + 10, fn: () => adjust_bet(-10) },
-      { label: "+10", enabled: bank >= base_bet + 10, fn: () => adjust_bet(10) },
-      { label: `DEAL $${amt}`, primary: true, enabled: true, fn: start_deal }
+      { label: "-10", enabled: bank >= MIN_BET + 10, fn: () => adjust_bet(-10), row: 1 },
+      { label: "+10", enabled: bank >= base_bet + 10, fn: () => adjust_bet(10), row: 1 },
+      { label: c ? "BET" : "BET [B]", enabled: true, fn: () => { state = "betting"; build_btns(); draw_screen(); }, row: 2 },
+      { label: `DEAL $${amt}`, primary: true, enabled: true, fn: start_deal, row: 2 }
     ];
     f_idx = 4;
   }
@@ -1077,28 +1087,54 @@ function draw_screen() {
 
   const nb = btns.length;
   if (nb > 0) {
-    const btn_margin_x = s2 ? 18 : gap;
-    const avail_w = W - btn_margin_x * 2;
-    const pv = s2 ? 8 : 3, bfsz = s2 ? f_md : f_sm, brad = s2 ? 6 : 4;
-    const bw = I((avail_w - (nb - 1) * gap) / nb), bh = bot_h - pv * 2, blh = th(bfsz);
-    const total_w = nb * bw + (nb - 1) * gap;
-    const start_x = I((W - total_w) / 2);
-    for (let i = 0; i < nb; i++) {
-      const b = btns[i], bx = start_x + i * (bw + gap), bby = by + pv;
-      b.x = bx; b.y = bby; b.w = bw; b.h = bh;
-      const bg = !b.enabled ? K_BDIS : (b.primary ? K_BACT : K_BTN);
-      const fg = (i + 1 === f_idx && b.enabled) ? (b.primary ? K_GLD : K_ACCENT) : (b.enabled ? "#2B3642" : null);
-      box(bx, bby, bw, bh, bg, fg, brad);
+    const dbl = (is_p4 && portrait && nb > 1);
+    const pvt = dbl ? (s2 ? 8 : 4) : (s2 ? 8 : 3);
+    const row_gap = s2 ? 6 : 4;
+    const btn_mx = dbl ? (s2 ? 22 : 12) : (s2 ? 18 : gap);
+    const avail_w = W - btn_mx * 2;
+    const row_h = dbl ? I((bot_h - pvt - (s2 ? 14 : 8) - row_gap) / 2) : (bot_h - pvt * 2);
+    const bfsz = s2 ? f_md : f_sm, brad = s2 ? 6 : 4;
+    let rows;
+    if (dbl) {
+      const r1 = [], r2 = [];
+      for (let i = 0; i < nb; i++) {
+        const r = btns[i].row || (i < Math.ceil(nb / 2) ? 1 : 2);
+        if (r === 2) r2.push(i); else r1.push(i);
+      }
+      rows = [r1, r2];
+    } else {
+      const r1 = []; for (let i = 0; i < nb; i++) r1.push(i);
+      rows = [r1];
+    }
 
-      let lbl = b.label;
-      if (bw < 56 && lbl.includes(" [")) lbl = lbl.replace(/ \[.*\]/, "");
-      if (bw < 46 && lbl.includes(" $")) lbl = lbl.replace(/ \$/, "");
-      if (bw < 38 && lbl === "STAND") lbl = "STND";
-      ctx.fillStyle = !b.enabled ? K_DIM : (b.primary ? K_GLD : K_TEXT);
-      ctx.font = `600 ${bfsz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(lbl, bx + bw / 2, bby + bh / 2);
+    for (let r_idx = 0; r_idx < rows.length; r_idx++) {
+      const rl = rows[r_idx];
+      const nr = rl.length;
+      if (nr > 0) {
+        const r_by = dbl ? (r_idx === 0 ? by + pvt : by + pvt + row_h + row_gap) : (by + pvt);
+        const bw = I((avail_w - (nr - 1) * gap) / nr);
+        const row_w = nr * bw + (nr - 1) * gap;
+        const r_sx = I((W - row_w) / 2);
+        for (let k = 0; k < nr; k++) {
+          const i = rl[k];
+          const b = btns[i];
+          const bx = r_sx + k * (bw + gap);
+          b.x = bx; b.y = r_by; b.w = bw; b.h = row_h;
+          const bg = !b.enabled ? K_BDIS : (b.primary ? K_BACT : K_BTN);
+          const fg = (i + 1 === f_idx && b.enabled) ? (b.primary ? K_GLD : K_ACCENT) : (b.enabled ? "#2B3642" : null);
+          box(bx, r_by, bw, row_h, bg, fg, brad);
+
+          let lbl = b.label;
+          if (bw < 56 && lbl.includes(" [")) lbl = lbl.replace(/ \[.*\]/, "");
+          if (bw < 46 && lbl.includes(" $")) lbl = lbl.replace(/ \$/, "");
+          if (bw < 38 && lbl === "STAND") lbl = "STND";
+          ctx.fillStyle = !b.enabled ? K_DIM : (b.primary ? K_GLD : K_TEXT);
+          ctx.font = `600 ${bfsz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(lbl, bx + bw / 2, r_by + row_h / 2);
+        }
+      }
     }
   }
 }

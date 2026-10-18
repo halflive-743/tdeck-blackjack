@@ -1,4 +1,4 @@
--- Blackjack 21 (Beta ver 1.2.1) — WADAMESH Lua app for LilyGo T-Deck, T-Display P4 (AMOLED/LCD), & MeshCore boards
+-- Blackjack 21 (Beta ver 1.2.2) — WADAMESH Lua app for LilyGo T-Deck, T-Display P4 (AMOLED/LCD), & MeshCore boards
 local ui, sys, store, timer = wada.ui, wada.sys, wada.store, wada.timer
 local C = ui.colors
 local app = {}
@@ -51,19 +51,31 @@ local function compute_layout()
   dev_name, is_p4, s2 = "T-Display P4 LCD", true, true
  elseif l >= 700 or s >= 460 then
   dev_name, is_p4, s2 = "Large HD", false, true
+ elseif (portrait and aspect > 1.9 and s <= 300) or is_p4 then
+  dev_name, is_p4, s2 = "T-Display P4", true, false
  else
-  dev_name, is_p4, s2 = (W >= 440 and H < 320) and "Wide Compact" or ((portrait and aspect > 1.9 and s <= 300) and "T-Display P4" or ((portrait and W <= 280) and "Compact Portrait" or "T-Deck")), false, false
+  dev_name, is_p4, s2 = (W >= 440 and H < 320) and "Wide Compact" or ((portrait and W <= 280) and "Compact Portrait" or "T-Deck"), false, false
  end
  if s2 then f_sm, f_md, f_lg, f_xl, f_rk = 14, 16, 20, 24, 16
  else f_sm, f_md, f_lg, f_xl, f_rk = 12, 12, 14, 16, 12 end
  lh_sm, lh_md, lh_lg, lh_xl = th(f_sm), th(f_md), th(f_lg), th(f_xl)
  if s2 then
-  top_h, bot_h, pad, gap = I(math.max(lh_md + 16, 40)), portrait and I(math.max(lh_md + 42, 72)) or I(math.max(lh_md + 26, 54)), (portrait or is_p4) and 22 or 14, 8
+  top_h, pad, gap = I(math.max(lh_md + 16, 40)), (portrait or is_p4) and 22 or 14, 8
+  if is_p4 and portrait then
+   bot_h = 114
+  else
+   bot_h = portrait and I(math.max(lh_md + 42, 72)) or I(math.max(lh_md + 26, 54))
+  end
  else
-  top_h, bot_h, pad, gap = I(math.max(lh_sm + 4, 20)), I(math.max(lh_sm + 14, 30)), 6, 4
+  top_h, pad, gap = I(math.max(lh_sm + 4, 20)), 6, 4
+  if is_p4 and portrait then
+   bot_h = 70
+  else
+   bot_h = I(math.max(lh_sm + 14, 30))
+  end
  end
  tbl_h = math.max(80, H - top_h - bot_h)
- if is_p4 and portrait then
+ if s2 and is_p4 and portrait then
   cw = I(clamp(W * 0.175, 88, 104)); ch = I(clamp(cw * 1.40, 122, 148))
   ov, s_ov, p_sm, p_lg = I(cw * 0.55), I(cw * 0.38), 6, 14
  elseif s2 then
@@ -316,23 +328,23 @@ local function adjust_bet(delta)
 end
 
 build_btns = function()
- local c = (W < 280)
+ local c = (W < 280) and not is_p4
  if state == "betting" then
   btns = {
-   { label = "-50", enabled = true, fn = function() adjust_bet(-50) end },
-   { label = "-10", enabled = true, fn = function() adjust_bet(-10) end },
-   { label = "+10", enabled = true, fn = function() adjust_bet(10) end },
-   { label = "+50", enabled = true, fn = function() adjust_bet(50) end },
-   { label = "MAX", enabled = true, fn = function() base_bet = I(math.min(MAX_BET, math.max(MIN_BET, bank))); sfx(); build_btns(); draw_screen() end },
-   { label = "DEAL", primary = true, enabled = true, fn = start_deal },
+   { label = "-50", enabled = true, fn = function() adjust_bet(-50) end, row = 1 },
+   { label = "-10", enabled = true, fn = function() adjust_bet(-10) end, row = 1 },
+   { label = "+10", enabled = true, fn = function() adjust_bet(10) end, row = 1 },
+   { label = "+50", enabled = true, fn = function() adjust_bet(50) end, row = 1 },
+   { label = "MAX", enabled = true, fn = function() base_bet = I(math.min(MAX_BET, math.max(MIN_BET, bank))); sfx(); build_btns(); draw_screen() end, row = 2 },
+   { label = "DEAL", primary = true, enabled = true, fn = start_deal, row = 2 },
   }
   f_idx = 6
  elseif state == "player" then
   btns = {
-   { label = c and "HIT" or "HIT [H]", primary = true, enabled = true, fn = do_hit },
-   { label = c and "STAND" or "STAND [S]", enabled = true, fn = do_stand },
-   { label = c and "DBL" or "DBL [D]", enabled = can_double(), fn = do_double },
-   { label = c and "SPLIT" or "SPLIT [P]", enabled = can_split(), fn = do_split },
+   { label = c and "HIT" or "HIT [H]", primary = true, enabled = true, fn = do_hit, row = 1 },
+   { label = c and "STAND" or "STAND [S]", enabled = true, fn = do_stand, row = 1 },
+   { label = c and "DBL" or "DBL [D]", enabled = can_double(), fn = do_double, row = 2 },
+   { label = c and "SPLIT" or "SPLIT [P]", enabled = can_split(), fn = do_split, row = 2 },
   }
   f_idx = 1
  elseif state == "dealer" then
@@ -340,10 +352,10 @@ build_btns = function()
  elseif state == "done" then
   local amt = I(clamp(base_bet, MIN_BET, math.max(MIN_BET, bank)))
   btns = {
-   { label = c and "BET" or "BET [B]", enabled = true, fn = function() state = "betting"; build_btns(); draw_screen() end },
-   { label = "-10", enabled = bank >= MIN_BET + 10, fn = function() adjust_bet(-10) end },
-   { label = "+10", enabled = bank >= base_bet + 10, fn = function() adjust_bet(10) end },
-   { label = string.format("DEAL $%d", amt), primary = true, enabled = true, fn = start_deal },
+   { label = "-10", enabled = bank >= MIN_BET + 10, fn = function() adjust_bet(-10) end, row = 1 },
+   { label = "+10", enabled = bank >= base_bet + 10, fn = function() adjust_bet(10) end, row = 1 },
+   { label = c and "BET" or "BET [B]", enabled = true, fn = function() state = "betting"; build_btns(); draw_screen() end, row = 2 },
+   { label = string.format("DEAL $%d", amt), primary = true, enabled = true, fn = start_deal, row = 2 },
   }
   f_idx = 4
  end
@@ -588,26 +600,48 @@ draw_screen = function()
  cv:rect(0, by, W, bot_h, K_BAR, true); cv:line(0, by, W, by, 0x1F2933, 1)
  local nb = #btns
  if nb > 0 then
-  local btn_margin_x = s2 and 18 or gap
-  local avail_w = W - btn_margin_x * 2
-  local pv, bfsz, brad = s2 and 8 or 3, s2 and f_md or f_sm, s2 and 6 or 4
-  local bw = I((avail_w - (nb - 1) * gap) / nb)
-  local bh, blh = bot_h - pv * 2, th(bfsz)
-  local total_w = nb * bw + (nb - 1) * gap
-  local start_x = I((W - total_w) / 2)
-  for i = 1, nb do
-   local b = btns[i]
-   local bx, bby = start_x + (i - 1) * (bw + gap), by + pv
-   b.x, b.y, b.w, b.h = bx, bby, bw, bh
-   local bg = not b.enabled and K_BDIS or (b.primary and K_BACT or K_BTN)
-   local fg = (i == f_idx and b.enabled) and (b.primary and K_GLD or C.accent) or (b.enabled and 0x2B3642 or nil)
-   box(bx, bby, bw, bh, bg, fg, brad)
-   local lbl = b.label
-   if bw < 56 and lbl:find(" %[") then lbl = lbl:gsub(" %[.*%]", "") end
-   if bw < 46 and lbl:find(" %$") then lbl = lbl:gsub(" %$", "") end
-   if bw < 38 and lbl == "STAND" then lbl = "STND" end
-   local tw_l = tw(lbl, bfsz)
-   cv:text(bx + math.max(2, I((bw - tw_l) / 2)), bby + math.max(1, I((bh - blh) / 2)), lbl, not b.enabled and K_DIM or (b.primary and K_GLD or C.text), bfsz)
+  local dbl = (is_p4 and portrait and nb > 1)
+  local pvt = dbl and (s2 and 8 or 4) or (s2 and 8 or 3)
+  local row_gap = s2 and 6 or 4
+  local btn_mx = dbl and (s2 and 22 or 12) or (s2 and 18 or gap)
+  local avail_w = W - btn_mx * 2
+  local row_h = dbl and I((bot_h - pvt - (s2 and 14 or 8) - row_gap) / 2) or (bot_h - pvt * 2)
+  local bfsz, brad = s2 and f_md or f_sm, s2 and 6 or 4
+  local blh = th(bfsz)
+  local rows
+  if dbl then
+   local r1, r2 = {}, {}
+   for i = 1, nb do
+    if (btns[i].row or (i <= math.ceil(nb / 2) and 1 or 2)) == 2 then r2[#r2 + 1] = i else r1[#r1 + 1] = i end
+   end
+   rows = { r1, r2 }
+  else
+   local r1 = {}; for i = 1, nb do r1[i] = i end; rows = { r1 }
+  end
+  for r_idx = 1, #rows do
+   local rl = rows[r_idx]
+   local nr = #rl
+   if nr > 0 then
+    local r_by = dbl and ((r_idx == 1) and (by + pvt) or (by + pvt + row_h + row_gap)) or (by + pvt)
+    local bw = I((avail_w - (nr - 1) * gap) / nr)
+    local row_w = nr * bw + (nr - 1) * gap
+    local r_sx = I((W - row_w) / 2)
+    for k = 1, nr do
+     local i = rl[k]
+     local b = btns[i]
+     local bx = r_sx + (k - 1) * (bw + gap)
+     b.x, b.y, b.w, b.h = bx, r_by, bw, row_h
+     local bg = not b.enabled and K_BDIS or (b.primary and K_BACT or K_BTN)
+     local fg = (i == f_idx and b.enabled) and (b.primary and K_GLD or C.accent) or (b.enabled and 0x2B3642 or nil)
+     box(bx, r_by, bw, row_h, bg, fg, brad)
+     local lbl = b.label
+     if bw < 56 and lbl:find(" %[") then lbl = lbl:gsub(" %[.*%]", "") end
+     if bw < 46 and lbl:find(" %$") then lbl = lbl:gsub(" %$", "") end
+     if bw < 38 and lbl == "STAND" then lbl = "STND" end
+     local tw_l = tw(lbl, bfsz)
+     cv:text(bx + math.max(2, I((bw - tw_l) / 2)), r_by + math.max(1, I((row_h - blh) / 2)), lbl, not b.enabled and K_DIM or (b.primary and K_GLD or C.text), bfsz)
+    end
+   end
   end
  end
 end
@@ -626,6 +660,8 @@ function app.on_open(w, h)
  local brd = (sys.board and sys.board()) or {}
  W = I((w and w > 0) and w or ((brd.w and brd.w > 0) and brd.w or 320))
  H = I((h and h > 0) and h or ((brd.h and brd.h > 0) and brd.h or 208))
+ local bname = string.lower(tostring(brd.name or brd.model or brd.board or ""))
+ if bname:find("p4") then is_p4 = true end
  compute_layout()
  bank      = I(tonumber(store.get("bank", START_BANK)) or START_BANK)
  best_bank = I(tonumber(store.get("best", START_BANK)) or START_BANK)
