@@ -44,9 +44,10 @@ end
 local function compute_layout()
  local s, l = math.min(W, H), math.max(W, H)
  portrait = (H > W)
- if l >= 1185 or (W == 568 and H >= 900) or (W >= 1185 and H >= 460) then
+ local aspect = l / math.max(1, s)
+ if l >= 1185 or (W == 568 and H >= 900) or (W >= 1185 and H >= 460) or (portrait and W == 284 and H >= 560) then
   dev_name, is_p4, s2 = "T-Display P4 AMOLED", true, true
- elseif (l >= 1050 and l < 1185) or (W == 540 and H >= 900) or (W >= 500 and W < 560 and H >= 900) then
+ elseif (l >= 1050 and l < 1185) or (W == 540 and H >= 900) or (W >= 500 and W < 560 and H >= 900) or (portrait and W == 270 and H >= 540) or (portrait and aspect > 1.9 and s >= 240 and s <= 300) then
   dev_name, is_p4, s2 = "T-Display P4 LCD", true, true
  elseif l >= 700 or s >= 460 then
   dev_name, is_p4, s2 = "Large HD", false, true
@@ -57,9 +58,9 @@ local function compute_layout()
  else f_sm, f_md, f_lg, f_xl, f_rk = 12, 12, 14, 16, 12 end
  lh_sm, lh_md, lh_lg, lh_xl = th(f_sm), th(f_md), th(f_lg), th(f_xl)
  if s2 then
-  top_h, bot_h, pad, gap = I(math.max(lh_md + 16, 40)), portrait and I(math.max(lh_md + 42, 72)) or I(math.max(lh_md + 26, 54)), 14, 8
+  top_h, bot_h, pad, gap = I(math.max(lh_md + 16, 40)), portrait and I(math.max(lh_md + 42, 72)) or I(math.max(lh_md + 26, 54)), (portrait or is_p4) and 22 or 14, 8
  else
-  top_h, bot_h, pad, gap = I(math.max(lh_sm + 4, 20)), I(math.max(lh_sm + 14, 30)), 6, 4
+  top_h, bot_h, pad, gap = I(math.max(lh_sm + 4, 20)), I(math.max(lh_sm + 14, 30)), (portrait or is_p4) and 20 or 6, 4
  end
  tbl_h = math.max(80, H - top_h - bot_h)
  if is_p4 and portrait then
@@ -434,7 +435,8 @@ draw_screen = function()
 
  local tfsz = s2 and f_md or f_sm
  local tty = math.max(1, I((top_h - th(tfsz)) / 2))
- cv:text(pad, tty, string.format("BANK $%d", bank), K_GLD, tfsz)
+ local top_margin = (portrait or is_p4) and 22 or pad
+ cv:text(top_margin, tty, string.format("BANK $%d", bank), K_GLD, tfsz)
 
  local abet = base_bet
  if state ~= "betting" and #hands > 0 then
@@ -443,19 +445,20 @@ draw_screen = function()
  local bstr = string.format("BET $%d", abet)
  local bx0 = I((W - tw(bstr, tfsz)) / 2)
  cv:text(bx0, tty, bstr, C.accent, tfsz)
- local rstr = string.format("PEAK $%d%s", best_bank, sound_on and "" or " [M]")
- cv:text(math.max(bx0 + tw(bstr, tfsz) + 6, W - tw(rstr, tfsz) - pad), tty, rstr, C.sub, tfsz)
+ local rstr = string.format(portrait and "HI $%d%s" or "PEAK $%d%s", best_bank, sound_on and "" or " [M]")
+ local rw = tw(rstr, tfsz)
+ cv:text(math.max(bx0 + tw(bstr, tfsz) + 6, W - rw - top_margin), tty, rstr, C.sub, tfsz)
 
  if state == "betting" then
-  local px, py = s2 and 20 or 12, s2 and 16 or 8
+  local px, py = (portrait or s2) and 18 or 12, s2 and 16 or 8
   local bw, bh, by = W - px * 2, tbl_h - py * 2, top_h + py
   box(px, by, bw, bh, K_FDK, K_FLN, s2 and 12 or 8)
   local wlbl = string.format("WAGER: $%d", base_bet)
   local ww = tw(wlbl, f_xl)
-  if portrait and s2 then
+  if portrait and s2 and H >= 800 then
    local cy = by + I(bh * 0.07)
-   tcx(cx, cy, "BLACKJACK 21", K_GLD, f_xl); cy = cy + lh_xl + 10
-   tcx(cx, cy, "3:2 Natural Payout  ·  Dealer Stands on 17", C.sub, f_sm); cy = cy + lh_sm + 6
+   tcx(cx, cy, "BLACKJACK 21", K_GLD, f_xl); cy = cy + lh_xl + 12
+   tcx(cx, cy, "3:2 Natural Payout  ·  Dealer Stands on 17", C.sub, f_sm); cy = cy + lh_sm + 8
    tcx(cx, cy, string.format("%s  (%dx%d)", dev_name, W, H), K_FLN, f_sm); cy = cy + lh_sm + I(bh * 0.05)
    draw_card_ui(cx - cw - 12, cy, cw, ch, { r = 1, s = 1 }, false)
    draw_card_ui(cx + 12, cy, cw, ch, { r = 13, s = 2 }, false)
@@ -468,18 +471,19 @@ draw_screen = function()
    tcx(cx, by + bh - lh_sm - 18, "Tap chip buttons below to adjust wager, then tap DEAL", C.sub, f_sm)
   else
    local dw, dh, dsm, dlg = s2 and 64 or 30, s2 and 90 or 42, s2 and 4 or 3, s2 and 9 or 5
-   if W >= 280 then
-    draw_card_ui(px + 10, by + 10, dw, dh, { r = 1, s = 1 }, false, dsm, dlg)
-    draw_card_ui(W - px - dw - 10, by + 10, dw, dh, { r = 13, s = 2 }, false, dsm, dlg)
+   local title_y = by + (portrait and (s2 and 22 or 16) or 10)
+   if W >= 280 and (not portrait or s2) then
+    draw_card_ui(px + 8, title_y - 2, dw, dh, { r = 1, s = 1 }, false, dsm, dlg)
+    draw_card_ui(W - px - dw - 8, title_y - 2, dw, dh, { r = 13, s = 2 }, false, dsm, dlg)
    end
-   tcx(cx, by + 10, "BLACKJACK 21", K_GLD, f_xl)
-   local sy = by + 10 + lh_xl + 4
+   tcx(cx, title_y, "BLACKJACK 21", K_GLD, f_xl)
+   local sy = title_y + lh_xl + (portrait and (s2 and 14 or 10) or 6)
    tcx(cx, sy, "3:2 Payout  ·  Stands on 17", C.sub, f_sm)
-   local ph, pw = lh_xl + (s2 and 16 or 8), ww + (s2 and 40 or 28)
-   local wy = math.max(sy + lh_sm + 10, I(by + (bh - ph) * 0.54))
+   local ph, pw = lh_xl + (s2 and 18 or 8), ww + (s2 and 40 or 28)
+   local wy = math.max(sy + lh_sm + (portrait and 20 or 10), I(by + (bh - ph) * 0.52))
    box(cx - I(pw / 2), wy, pw, ph, K_BACT, C.accent, 6)
    tcx(cx, wy + I((ph - lh_xl) / 2), wlbl, C.text, f_xl)
-   local hy = by + bh - lh_sm - (s2 and 12 or 6)
+   local hy = by + bh - lh_sm - (portrait and 16 or 8)
    if hy > wy + ph + 4 then
     tcx(cx, hy, W >= 300 and "Tap buttons or [Up/Down] Bet  [D] Deal" or "Tap buttons below to Bet & Deal", C.sub, f_sm)
    end
@@ -552,17 +556,26 @@ draw_screen = function()
  cv:rect(0, by, W, bot_h, K_BAR, true); cv:line(0, by, W, by, 0x1F2933, 1)
  local nb = #btns
  if nb > 0 then
-  local pv, bfsz, brad = s2 and 8 or 3, s2 and f_md or f_sm, s2 and 8 or 4
-  local bw, bh, blh = I((W - gap * (nb + 1)) / nb), bot_h - pv * 2, th(bfsz)
+  local btn_margin_x = (portrait or is_p4) and 18 or gap
+  local avail_w = W - btn_margin_x * 2
+  local pv, bfsz, brad = s2 and 8 or 3, s2 and f_md or f_sm, s2 and 6 or 4
+  local bw = I((avail_w - (nb - 1) * gap) / nb)
+  local bh, blh = bot_h - pv * 2, th(bfsz)
+  local total_w = nb * bw + (nb - 1) * gap
+  local start_x = I((W - total_w) / 2)
   for i = 1, nb do
-   local b, bx, bby = btns[i], gap + (i - 1) * (I((W - gap * (nb + 1)) / nb) + gap), by + pv
+   local b = btns[i]
+   local bx, bby = start_x + (i - 1) * (bw + gap), by + pv
    b.x, b.y, b.w, b.h = bx, bby, bw, bh
    local bg = not b.enabled and K_BDIS or (b.primary and K_BACT or K_BTN)
    local fg = (i == f_idx and b.enabled) and (b.primary and K_GLD or C.accent) or (b.enabled and 0x2B3642 or nil)
    box(bx, bby, bw, bh, bg, fg, brad)
    local lbl = b.label
-   if tw(lbl, bfsz) > bw - 6 and lbl:find(" %[") then lbl = lbl:gsub(" %[.*%]", "") end
-   cv:text(bx + math.max(2, I((bw - tw(lbl, bfsz)) / 2)), bby + math.max(1, I((bh - blh) / 2)), lbl, not b.enabled and K_DIM or (b.primary and K_GLD or C.text), bfsz)
+   if bw < 56 and lbl:find(" %[") then lbl = lbl:gsub(" %[.*%]", "") end
+   if bw < 46 and lbl:find(" %$") then lbl = lbl:gsub(" %$", "") end
+   if bw < 38 and lbl == "STAND" then lbl = "STND" end
+   local tw_l = tw(lbl, bfsz)
+   cv:text(bx + math.max(2, I((bw - tw_l) / 2)), bby + math.max(1, I((bh - blh) / 2)), lbl, not b.enabled and K_DIM or (b.primary and K_GLD or C.text), bfsz)
   end
  end
 end

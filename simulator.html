@@ -511,9 +511,10 @@ function showToast(msg) {
 function compute_layout() {
   const s = Math.min(W, H), l = Math.max(W, H);
   portrait = (H > W);
-  if (l >= 1185 || (W === 568 && H >= 900) || (W >= 1185 && H >= 460)) {
+  const aspect = l / Math.max(1, s);
+  if (l >= 1185 || (W === 568 && H >= 900) || (W >= 1185 && H >= 460) || (portrait && W === 284 && H >= 560)) {
     dev_name = "T-Display P4 AMOLED"; is_p4 = true; s2 = true;
-  } else if ((l >= 1050 && l < 1185) || (W === 540 && H >= 900) || (W >= 500 && W < 560 && H >= 900)) {
+  } else if ((l >= 1050 && l < 1185) || (W === 540 && H >= 900) || (W >= 500 && W < 560 && H >= 900) || (portrait && W === 270 && H >= 540) || (portrait && aspect > 1.9 && s >= 240 && s <= 300)) {
     dev_name = "T-Display P4 LCD"; is_p4 = true; s2 = true;
   } else if (l >= 700 || s >= 460) {
     dev_name = "Large HD"; is_p4 = false; s2 = true;
@@ -529,11 +530,11 @@ function compute_layout() {
   if (s2) {
     top_h = I(Math.max(lh_md + 16, 40));
     bot_h = portrait ? I(Math.max(lh_md + 42, 72)) : I(Math.max(lh_md + 26, 54));
-    pad = 14; gap = 8;
+    pad = (portrait || is_p4) ? 22 : 14; gap = 8;
   } else {
     top_h = I(Math.max(lh_sm + 4, 20));
     bot_h = I(Math.max(lh_sm + 14, 30));
-    pad = 6; gap = 4;
+    pad = (portrait || is_p4) ? 20 : 6; gap = 4;
   }
   tbl_h = Math.max(80, H - top_h - bot_h);
 
@@ -895,11 +896,12 @@ function draw_screen() {
 
   const tfsz = s2 ? f_md : f_sm;
   const tty = Math.max(1, I((top_h - th(tfsz)) / 2));
+  const top_margin = (portrait || is_p4) ? 22 : pad;
   ctx.fillStyle = K_GLD;
   ctx.font = `600 ${tfsz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(`BANK $${bank}`, pad, tty);
+  ctx.fillText(`BANK $${bank}`, top_margin, tty);
 
   let abet = base_bet;
   if (state !== "betting" && hands.length > 0) abet = hands.reduce((sum, h) => sum + h.bet, 0);
@@ -908,22 +910,22 @@ function draw_screen() {
   ctx.fillStyle = K_ACCENT;
   ctx.fillText(bstr, bx0, tty);
 
-  const rstr = `PEAK $${best_bank}${sound_on ? "" : " [M]"}`;
+  const rstr = portrait ? `HI $${best_bank}${sound_on ? "" : " [M]"}` : `PEAK $${best_bank}${sound_on ? "" : " [M]"}`;
   ctx.fillStyle = K_SUB;
   ctx.textAlign = "right";
-  ctx.fillText(rstr, W - pad, tty);
+  ctx.fillText(rstr, W - top_margin, tty);
 
   if (state === "betting") {
-    const px = s2 ? 20 : 12, py = s2 ? 16 : 8;
+    const px = (portrait || s2) ? 18 : 12, py = s2 ? 16 : 8;
     const bw = W - px * 2, bh = tbl_h - py * 2, by = top_h + py;
     box(px, by, bw, bh, K_FDK, K_FLN, s2 ? 12 : 8);
     const wlbl = `WAGER: $${base_bet}`;
     const ww = tw(wlbl, f_xl);
 
-    if (portrait && s2) {
+    if (portrait && s2 && H >= 800) {
       let cy = by + I(bh * 0.07);
-      tcx(cx, cy, "BLACKJACK 21", K_GLD, f_xl); cy += lh_xl + 10;
-      tcx(cx, cy, "3:2 Natural Payout  ·  Dealer Stands on 17", K_SUB, f_sm); cy += lh_sm + 6;
+      tcx(cx, cy, "BLACKJACK 21", K_GLD, f_xl); cy += lh_xl + 12;
+      tcx(cx, cy, "3:2 Natural Payout  ·  Dealer Stands on 17", K_SUB, f_sm); cy += lh_sm + 8;
       tcx(cx, cy, `${dev_name}  (${W}×${H})`, K_FLN, f_sm); cy += lh_sm + I(bh * 0.05);
 
       draw_card_ui(cx - cw - 12, cy, cw, ch, { r: 1, s: 1 }, false);
@@ -939,20 +941,21 @@ function draw_screen() {
       tcx(cx, by + bh - lh_sm - 18, "Tap chip buttons below to adjust wager, then tap DEAL", K_SUB, f_sm);
     } else {
       const dw = s2 ? 64 : 30, dh = s2 ? 90 : 42, dsm = s2 ? 4 : 3, dlg = s2 ? 9 : 5;
-      if (W >= 280) {
-        draw_card_ui(px + 10, by + 10, dw, dh, { r: 1, s: 1 }, false, dsm, dlg);
-        draw_card_ui(W - px - dw - 10, by + 10, dw, dh, { r: 13, s: 2 }, false, dsm, dlg);
+      const title_y = by + (portrait ? (s2 ? 22 : 16) : 10);
+      if (W >= 280 && (!portrait || s2)) {
+        draw_card_ui(px + 8, title_y - 2, dw, dh, { r: 1, s: 1 }, false, dsm, dlg);
+        draw_card_ui(W - px - dw - 8, title_y - 2, dw, dh, { r: 13, s: 2 }, false, dsm, dlg);
       }
-      tcx(cx, by + 10, "BLACKJACK 21", K_GLD, f_xl);
-      const sy = by + 10 + lh_xl + 4;
+      tcx(cx, title_y, "BLACKJACK 21", K_GLD, f_xl);
+      const sy = title_y + lh_xl + (portrait ? (s2 ? 14 : 10) : 6);
       tcx(cx, sy, "3:2 Payout  ·  Stands on 17", K_SUB, f_sm);
 
-      const ph = lh_xl + (s2 ? 16 : 8), pw = ww + (s2 ? 40 : 28);
-      const wy = Math.max(sy + lh_sm + 10, I(by + (bh - ph) * 0.54));
+      const ph = lh_xl + (s2 ? 18 : 8), pw = ww + (s2 ? 40 : 28);
+      const wy = Math.max(sy + lh_sm + (portrait ? 20 : 10), I(by + (bh - ph) * 0.52));
       box(cx - I(pw / 2), wy, pw, ph, K_BACT, K_ACCENT, 6);
       tcx(cx, wy + I((ph - lh_xl) / 2), wlbl, K_TEXT, f_xl);
 
-      const hy = by + bh - lh_sm - (s2 ? 12 : 6);
+      const hy = by + bh - lh_sm - (portrait ? 16 : 8);
       if (hy > wy + ph + 4) {
         tcx(cx, hy, W >= 300 ? "Tap buttons or [Up/Down] Bet  [D] Deal" : "Tap buttons below to Bet & Deal", K_SUB, f_sm);
       }
@@ -1038,17 +1041,23 @@ function draw_screen() {
 
   const nb = btns.length;
   if (nb > 0) {
-    const pv = s2 ? 8 : 3, bfsz = s2 ? f_md : f_sm, brad = s2 ? 8 : 4;
-    const bw = I((W - gap * (nb + 1)) / nb), bh = bot_h - pv * 2, blh = th(bfsz);
+    const btn_margin_x = (portrait || is_p4) ? 18 : gap;
+    const avail_w = W - btn_margin_x * 2;
+    const pv = s2 ? 8 : 3, bfsz = s2 ? f_md : f_sm, brad = s2 ? 6 : 4;
+    const bw = I((avail_w - (nb - 1) * gap) / nb), bh = bot_h - pv * 2, blh = th(bfsz);
+    const total_w = nb * bw + (nb - 1) * gap;
+    const start_x = I((W - total_w) / 2);
     for (let i = 0; i < nb; i++) {
-      const b = btns[i], bx = gap + i * (bw + gap), bby = by + pv;
+      const b = btns[i], bx = start_x + i * (bw + gap), bby = by + pv;
       b.x = bx; b.y = bby; b.w = bw; b.h = bh;
       const bg = !b.enabled ? K_BDIS : (b.primary ? K_BACT : K_BTN);
       const fg = (i + 1 === f_idx && b.enabled) ? (b.primary ? K_GLD : K_ACCENT) : (b.enabled ? "#2B3642" : null);
       box(bx, bby, bw, bh, bg, fg, brad);
 
       let lbl = b.label;
-      if (tw(lbl, bfsz) > bw - 6 && lbl.includes(" [")) lbl = lbl.replace(/ \[.*\]/, "");
+      if (bw < 56 && lbl.includes(" [")) lbl = lbl.replace(/ \[.*\]/, "");
+      if (bw < 46 && lbl.includes(" $")) lbl = lbl.replace(/ \$/, "");
+      if (bw < 38 && lbl === "STAND") lbl = "STND";
       ctx.fillStyle = !b.enabled ? K_DIM : (b.primary ? K_GLD : K_TEXT);
       ctx.font = `600 ${bfsz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
       ctx.textAlign = "center";
