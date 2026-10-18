@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LilyGo T-Deck · WADAMESH Blackjack Simulator</title>
+<title>WADAMESH Blackjack · Multi-Device Hardware Simulator</title>
 <style>
   :root {
     --bg: #0b0e12;
@@ -11,45 +11,83 @@
     --shell-edge: #2c343e;
     --teal: #15b6a6;
     --gold: #f2c14e;
+    --red: #d9383a;
+    --good: #10b981;
+    --bad: #ef4444;
     --text: #e6e9ed;
     --sub: #7a7f87;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
   body {
-    background: radial-gradient(circle at 50% 20%, #162229 0%, #090c10 75%);
+    background: radial-gradient(circle at 50% 20%, #16242f 0%, #090c10 75%);
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 24px 16px;
+    padding: 16px;
+    overflow-x: auto;
   }
   header {
     text-align: center;
-    margin-bottom: 18px;
+    margin-bottom: 12px;
   }
   header h1 {
     font-size: 1.35rem;
     letter-spacing: 1px;
     font-weight: 700;
   }
-  header h1 span { color: var(--teal); }
+  header h1 span { color: var(--gold); }
   header p {
     color: var(--sub);
-    font-size: 0.88rem;
+    font-size: 0.85rem;
     margin-top: 4px;
   }
+
+  /* Device Switcher Bar */
+  .device-bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    max-width: 960px;
+  }
+  .dev-pill {
+    background: #161c24;
+    border: 1px solid #283344;
+    border-radius: 99px;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+  }
+  .dev-pill:hover {
+    border-color: var(--gold);
+    color: #fff;
+  }
+  .dev-pill.active {
+    background: #2b250f;
+    border-color: var(--gold);
+    color: var(--gold);
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(242, 193, 78, 0.2);
+  }
+
+  /* Hardware Device Shell */
   .tdeck-device {
-    width: 368px;
     background: linear-gradient(180deg, #22272e 0%, #171b20 100%);
     border: 2px solid var(--shell-edge);
     border-radius: 26px;
-    padding: 18px 22px 22px;
+    padding: 16px 20px 20px;
     box-shadow: 0 28px 70px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.08);
     display: flex;
     flex-direction: column;
     align-items: center;
+    transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .bezel-top {
     width: 100%;
@@ -58,307 +96,485 @@
     align-items: center;
     margin-bottom: 8px;
     padding: 0 4px;
-    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-    font-size: 0.68rem;
-    color: #6c7682;
-    letter-spacing: 0.08em;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #8b949e;
+    font-family: ui-monospace, monospace;
+    font-weight: 700;
   }
   .screen-wrap {
-    width: 320px;
-    height: 240px;
     background: #000;
     border-radius: 8px;
     overflow: hidden;
-    border: 2px solid #0a0c0e;
-    box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.9), 0 0 0 2px #0f1216;
+    position: relative;
+    cursor: crosshair;
     display: flex;
     flex-direction: column;
-    position: relative;
   }
   .wada-bar {
     height: 32px;
-    background: #080b0e;
-    border-bottom: 1px solid #192129;
+    background: #0d1117;
+    border-bottom: 1px solid #21262d;
     display: flex;
     align-items: center;
-    padding: 0 10px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text);
     justify-content: space-between;
+    padding: 0 10px;
+    font-size: 11px;
+    color: var(--text);
+    font-family: ui-monospace, monospace;
+    flex-shrink: 0;
   }
   .wada-bar .back {
     color: var(--teal);
-    font-family: monospace;
+    font-weight: 700;
   }
   .wada-bar .sys {
     color: var(--sub);
-    font-size: 11px;
-    font-family: monospace;
+    font-size: 10px;
   }
-  canvas#screen {
-    width: 320px;
-    height: 208px;
+  #screen {
     display: block;
-    cursor: pointer;
     image-rendering: pixelated;
   }
-  .toast {
+
+  /* Nav Controls & Trackball */
+  .nav-zone {
+    width: 100%;
+    margin-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+  }
+  .trackball-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .trackball-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #8b949e;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .trackball {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #586069, #24292e 60%, #0d1117);
+    border: 2px solid #30363d;
+    box-shadow: inset 0 2px 4px rgba(255,255,255,0.2), 0 4px 8px rgba(0,0,0,0.6);
+    cursor: pointer;
+    position: relative;
+  }
+  .trackball:active { transform: scale(0.94); }
+  .trackball::after {
+    content: '';
     position: absolute;
-    bottom: 36px;
+    top: 50%; left: 50%;
+    width: 8px; height: 8px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .dpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 26px);
+    grid-template-rows: repeat(3, 26px);
+    gap: 3px;
+  }
+  .dbtn {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #c9d1d9;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 0 #0d1117;
+  }
+  .dbtn:active { transform: translateY(1px); background: #2d333b; }
+  .dbtn.up { grid-column: 2; grid-row: 1; }
+  .dbtn.left { grid-column: 1; grid-row: 2; }
+  .dbtn.center { grid-column: 2; grid-row: 2; font-size: 8px; font-weight: 700; color: var(--gold); }
+  .dbtn.right { grid-column: 3; grid-row: 2; }
+  .dbtn.down { grid-column: 2; grid-row: 3; }
+
+  /* Keyboard Deck */
+  .keyboard-deck {
+    width: 100%;
+    margin-top: 12px;
+    background: #13171d;
+    border: 1px solid #28303a;
+    border-radius: 12px;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+  }
+  .key-row {
+    display: flex;
+    justify-content: center;
+    gap: 3px;
+  }
+  .key {
+    background: linear-gradient(180deg, #242b35 0%, #171c23 100%);
+    border: 1px solid #353f4d;
+    border-radius: 4px;
+    color: #e6edf3;
+    font-size: 9px;
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    min-width: 25px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 1.5px 0 #0a0d11;
+  }
+  .key:active, .key.pressed {
+    transform: translateY(1px);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .key.wide { min-width: 38px; }
+  .key.space { min-width: 88px; }
+  .key.accent { color: var(--gold); }
+
+  .instructions {
+    margin-top: 16px;
+    max-width: 580px;
+    background: #11161f;
+    border: 1px solid #202936;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 11px;
+    color: #8b949e;
+    line-height: 1.55;
+  }
+  .instructions strong { color: var(--text); }
+  .instructions kbd {
+    background: #1c222b;
+    border: 1px solid #303947;
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-size: 10px;
+    color: var(--gold);
+    font-family: ui-monospace, monospace;
+  }
+  .toast-banner {
+    position: absolute;
+    bottom: 42px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(21, 24, 27, 0.95);
-    border: 1px solid var(--teal);
-    color: var(--text);
+    background: rgba(13, 17, 23, 0.94);
+    border: 1px solid var(--gold);
+    color: var(--gold);
     font-size: 11px;
-    padding: 4px 12px;
-    border-radius: 99px;
+    font-family: ui-monospace, monospace;
+    padding: 4px 14px;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.7);
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.2s;
+    z-index: 99;
   }
-  .toast.show { opacity: 1; }
-
-  /* Trackball */
-  .mid-strip {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    margin: 12px 0 10px;
-  }
-  .trackball-pad {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .tb-btn {
-    background: #252b33;
-    border: 1px solid #363f4a;
-    color: #9aa5b1;
-    border-radius: 6px;
-    width: 26px;
-    height: 24px;
-    font-size: 10px;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-  }
-  .tb-btn:hover { border-color: var(--teal); color: #fff; }
-  .trackball {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #55606e, #181c20 75%);
-    border: 2px solid #323b46;
-    cursor: pointer;
-    box-shadow: inset 0 2px 4px rgba(255,255,255,0.15), 0 2px 5px rgba(0,0,0,0.6);
-  }
-  .trackball:active { transform: scale(0.95); }
-
-  /* Physical Keyboard */
-  .kbd {
-    width: 320px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    background: #121519;
-    padding: 8px;
-    border-radius: 12px;
-    border: 1px solid #252b32;
-  }
-  .krow {
-    display: flex;
-    gap: 4px;
-    justify-content: center;
-  }
-  .key {
-    flex: 1;
-    height: 24px;
-    background: #232931;
-    border: 1px solid #323a45;
-    border-bottom: 2px solid #0e1114;
-    border-radius: 5px;
-    color: #d1d7de;
-    font-family: ui-monospace, monospace;
-    font-size: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    display: grid;
-    place-items: center;
-  }
-  .key:hover { background: #2d3540; border-color: var(--teal); }
-  .key:active { transform: translateY(1px); }
-  .key.hi { color: var(--gold); border-color: #5c4b23; }
-  .key.wide { flex: 2.4; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>WADA<span>MESH</span> · LilyGo T-Deck Blackjack</h1>
-  <p>Click screen buttons, use the T-Deck keypad below, or press physical keys (<b>H</b>, <b>S</b>, <b>D</b>, <b>P</b>, <b>Arrows</b>, <b>Enter</b>)</p>
+  <h1>WADAMESH <span>BLACKJACK 21</span></h1>
+  <p>Multi-Device Hardware & Audio Simulator (Lua 5.4)</p>
 </header>
 
-<div class="tdeck-device">
+<div class="device-bar">
+  <div class="dev-pill active" onclick="switchDevice('tdeck')">LilyGo T-Deck (320×208)</div>
+  <div class="dev-pill" onclick="switchDevice('heltec')">Heltec V4 (240×244)</div>
+  <div class="dev-pill" onclick="switchDevice('pager')">T-LoRa Pager (480×178)</div>
+  <div class="dev-pill" onclick="switchDevice('p4_land')">T-Display P4 LCD (1168×474)</div>
+  <div class="dev-pill" onclick="switchDevice('p4_port')">T-Display P4 LCD Portrait (540×1102)</div>
+  <div class="dev-pill" onclick="switchDevice('p4_amoled_land')">T-Display P4 AMOLED (1232×502)</div>
+  <div class="dev-pill" onclick="switchDevice('p4_amoled_port')">T-Display P4 AMOLED Portrait (568×1166)</div>
+</div>
+
+<div class="tdeck-device" id="device-shell">
   <div class="bezel-top">
-    <span>LILYGO® T-DECK</span>
-    <span>320×240 IPS · LUA 5.4</span>
+    <span id="bezel-name">LILYGO T-DECK</span>
+    <span id="bezel-spec">320×208 · MESHCORE</span>
   </div>
 
-  <div class="screen-wrap">
+  <div class="screen-wrap" id="screen-wrap">
     <div class="wada-bar">
-      <span class="back">&lt; Blackjack</span>
-      <span class="sys">LoRa 915 · 84%</span>
+      <span class="back">&lt; Apps</span>
+      <span style="font-weight:700;">Blackjack v1.1</span>
+      <span class="sys">CH 0 · 100%</span>
     </div>
     <canvas id="screen" width="320" height="208"></canvas>
-    <div id="toast" class="toast"></div>
+    <div id="toast" class="toast-banner">Toast</div>
   </div>
 
-  <div class="mid-strip">
-    <div class="trackball-pad">
-      <button class="tb-btn" title="Swipe Left" onclick="sendSwipe('left')">◀</button>
-      <button class="tb-btn" title="Swipe Up" onclick="sendSwipe('up')">▲</button>
-      <div class="trackball" title="Click Trackball (Enter)" onclick="sendKey('enter')"></div>
-      <button class="tb-btn" title="Swipe Down" onclick="sendSwipe('down')">▼</button>
-      <button class="tb-btn" title="Swipe Right" onclick="sendSwipe('right')">▶</button>
+  <div class="nav-zone">
+    <div class="trackball-wrap">
+      <div class="trackball" id="trackball" title="Trackball: Roll left/right to select button, click to trigger"></div>
+      <span class="trackball-label">Trackball</span>
+    </div>
+    <div class="dpad-grid">
+      <button class="dbtn up" onclick="triggerKey('up')" title="Adjust Bet + / Hit">▲</button>
+      <button class="dbtn left" onclick="triggerKey('left')" title="Cycle Left">◀</button>
+      <button class="dbtn center" onclick="triggerKey('enter')" title="Select / Deal">OK</button>
+      <button class="dbtn right" onclick="triggerKey('right')" title="Cycle Right">▶</button>
+      <button class="dbtn down" onclick="triggerKey('down')" title="Adjust Bet - / Stand">▼</button>
     </div>
   </div>
 
-  <div class="kbd">
-    <div class="krow">
-      <div class="key" onclick="sendKey('q')">Q</div>
-      <div class="key" onclick="sendKey('w')">W</div>
-      <div class="key" onclick="sendKey('e')">E</div>
-      <div class="key" onclick="sendKey('r')">R</div>
-      <div class="key" onclick="sendKey('t')">T</div>
-      <div class="key" onclick="sendKey('y')">Y</div>
-      <div class="key" onclick="sendKey('u')">U</div>
-      <div class="key" onclick="sendKey('i')">I</div>
-      <div class="key" onclick="sendKey('o')">O</div>
-      <div class="key hi" title="Split" onclick="sendKey('p')">P</div>
+  <div class="keyboard-deck">
+    <div class="key-row">
+      <div class="key" data-k="1">1</div><div class="key" data-k="2">2</div><div class="key" data-k="3">3</div><div class="key" data-k="4">4</div><div class="key" data-k="5">5</div>
+      <div class="key" data-k="6">6</div><div class="key" data-k="7">7</div><div class="key" data-k="8">8</div><div class="key" data-k="9">9</div><div class="key" data-k="0">0</div>
     </div>
-    <div class="krow">
-      <div class="key" onclick="sendKey('a')">A</div>
-      <div class="key hi" title="Stand" onclick="sendKey('s')">S</div>
-      <div class="key hi" title="Double / Deal" onclick="sendKey('d')">D</div>
-      <div class="key" onclick="sendKey('f')">F</div>
-      <div class="key" onclick="sendKey('g')">G</div>
-      <div class="key hi" title="Hit" onclick="sendKey('h')">H</div>
-      <div class="key" onclick="sendKey('j')">J</div>
-      <div class="key" onclick="sendKey('k')">K</div>
-      <div class="key" onclick="sendKey('l')">L</div>
-      <div class="key wide hi" onclick="sendKey('enter')">ENTER</div>
+    <div class="key-row">
+      <div class="key" data-k="q">Q</div><div class="key" data-k="w">W</div><div class="key" data-k="e">E</div><div class="key" data-k="r">R</div><div class="key" data-k="t">T</div>
+      <div class="key" data-k="y">Y</div><div class="key" data-k="u">U</div><div class="key" data-k="i">I</div><div class="key" data-k="o">O</div><div class="key" data-k="p">P</div>
     </div>
-    <div class="krow">
-      <div class="key" onclick="sendKey('z')">Z</div>
-      <div class="key hi" title="Max Bet" onclick="sendKey('x')">X</div>
-      <div class="key hi" title="Min Bet" onclick="sendKey('c')">C</div>
-      <div class="key" onclick="sendKey('v')">V</div>
-      <div class="key hi" title="Bet Screen" onclick="sendKey('b')">B</div>
-      <div class="key wide" onclick="sendKey(' ')">SPACE</div>
-      <div class="key" onclick="sendKey('n')">N</div>
-      <div class="key hi" title="Mute" onclick="sendKey('m')">M</div>
+    <div class="key-row">
+      <div class="key" data-k="a">A</div><div class="key" data-k="s">S</div><div class="key" data-k="d">D</div><div class="key" data-k="f">F</div><div class="key" data-k="g">G</div>
+      <div class="key" data-k="h">H</div><div class="key" data-k="j">J</div><div class="key" data-k="k">K</div><div class="key" data-k="l">L</div><div class="key wide accent" data-k="enter">ENT</div>
+    </div>
+    <div class="key-row">
+      <div class="key wide" data-k="escape">ESC</div><div class="key" data-k="z">Z</div><div class="key" data-k="x">X</div><div class="key" data-k="c">C</div><div class="key" data-k="v">V</div>
+      <div class="key" data-k="b">B</div><div class="key" data-k="n">N</div><div class="key" data-k="m">M</div><div class="key space" data-k=" ">SPACE</div>
     </div>
   </div>
 </div>
 
+<div class="instructions">
+  <strong>🃏 Controls Reference:</strong><br>
+  • <strong>Touch / Mouse:</strong> Tap bottom bar buttons, or tap felt table after hand to deal again.<br>
+  • <strong>Action Hotkeys:</strong> <kbd>H</kbd> Hit &nbsp;•&nbsp; <kbd>S</kbd> Stand &nbsp;•&nbsp; <kbd>D</kbd> Double / Deal &nbsp;•&nbsp; <kbd>P</kbd> Split &nbsp;•&nbsp; <kbd>B</kbd> Bet &nbsp;•&nbsp; <kbd>Enter</kbd> / <kbd>Space</kbd> Confirm.<br>
+  • <strong>Wager Adjustment:</strong> <kbd>↑ / ↓</kbd> or <kbd>+ / -</kbd> (±$10) &nbsp;•&nbsp; <kbd>1 / 2</kbd> (±$50) &nbsp;•&nbsp; <kbd>X</kbd> Max Bet &nbsp;•&nbsp; <kbd>C</kbd> Min Bet ($10).<br>
+  • <strong>Trackball & Arrows:</strong> Roll Left/Right to highlight action buttons, Roll Up/Down to Bet/Hit/Stand.<br>
+  • <strong>Sound:</strong> Tap top-right bar or press <kbd>M</kbd> to toggle audio synthesizer.
+</div>
+
 <script>
-// Exact implementation of WadaMesh wada.* canvas & runtime driving blackjack.lua logic
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d');
-const W = 320, H = 208;
+const toastEl = document.getElementById('toast');
 
-const C = {
-  accent: 0x15B6A6, text: 0xE6E9ED, sub: 0x7A7F87,
-  bg: 0x000000, panel: 0x15181B, bad: 0xD7574E, good: 0x53C06B
+const DEVICES = {
+  tdeck:          { name: "LilyGo T-Deck", spec: "320×208 · MESHCORE", w: 320, h: 208, shellW: 368 },
+  heltec:         { name: "Heltec V4", spec: "240×244 · TFT", w: 240, h: 244, shellW: 288 },
+  pager:          { name: "LilyGo T-LoRa Pager", spec: "480×178 · KEYPAD", w: 480, h: 178, shellW: 528 },
+  p4_land:        { name: "T-Display P4 LCD Landscape", spec: "1168×474 · LCD", w: 1168, h: 474, shellW: 1208 },
+  p4_port:        { name: "T-Display P4 LCD Portrait", spec: "540×1102 · LCD", w: 540, h: 1102, shellW: 580 },
+  p4_amoled_land: { name: "T-Display P4 AMOLED Landscape", spec: "1232×502 · AMOLED", w: 1232, h: 502, shellW: 1272 },
+  p4_amoled_port: { name: "T-Display P4 AMOLED Portrait", spec: "568×1166 · AMOLED", w: 568, h: 1166, shellW: 608 },
 };
 
-function hexCss(c) {
-  return '#' + (c & 0xFFFFFF).toString(16).padStart(6, '0');
-}
+let currentDev = DEVICES.tdeck;
+let W = 320, H = 208;
+let dev_name = "T-Deck", is_p4 = false, portrait = false, s2 = false;
+let top_h = 20, bot_h = 30, tbl_h = 158, cw = 34, ch = 46, ov = 20, s_ov = 16;
+let p_sm = 3, p_lg = 5, f_sm = 12, f_md = 12, f_lg = 14, f_xl = 16, f_rk = 12;
+let lh_sm = 16, lh_md = 16, lh_lg = 18, lh_xl = 20, pad = 6, gap = 4;
 
-function showToast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 1600);
-}
-
-const cv = {
-  fill(col) {
-    ctx.fillStyle = hexCss(col);
-    ctx.fillRect(0, 0, W, H);
-  },
-  rect(x, y, w, h, col, filled = true, radius = 0) {
-    ctx.beginPath();
-    if (radius > 0 && ctx.roundRect) {
-      ctx.roundRect(x, y, w, h, radius);
-    } else {
-      ctx.rect(x, y, w, h);
-    }
-    if (filled) {
-      ctx.fillStyle = hexCss(col);
-      ctx.fill();
-    } else {
-      ctx.strokeStyle = hexCss(col);
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-  },
-  line(x1, y1, x2, y2, col, width = 1) {
-    ctx.beginPath();
-    ctx.moveTo(x1 + 0.5, y1 + 0.5);
-    ctx.lineTo(x2 + 0.5, y2 + 0.5);
-    ctx.strokeStyle = hexCss(col);
-    ctx.lineWidth = width;
-    ctx.stroke();
-  },
-  circle(x, y, r, col, filled = true) {
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    if (filled) {
-      ctx.fillStyle = hexCss(col);
-      ctx.fill();
-    } else {
-      ctx.strokeStyle = hexCss(col);
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    }
-  },
-  text(x, y, s, col, size = 12) {
-    ctx.fillStyle = hexCss(col);
-    ctx.font = `600 ${size}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
-    ctx.textBaseline = 'top';
-    ctx.fillText(String(s), x, y);
-  }
-};
-
-function text_w(str, sz = 12) {
-  ctx.font = `600 ${sz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
-  return Math.floor(ctx.measureText(String(str)).width);
-}
-
-// Mirror of blackjack.lua state machine
-const COL_FELT = 0x0B2B1E, COL_FELT_LINE = 0x164A35, COL_TOPBAR = 0x0E1318, COL_BOTBAR = 0x0E1318;
-const COL_CARD_BG = 0xF5F7FA, COL_CARD_SHAD = 0x06150E, COL_CARD_BACK = 0x1B4F8A, COL_CARD_TRIM = 0x4A8FE7;
-const COL_RED = 0xD9383A, COL_BLACK = 0x181C24, COL_GOLD = 0xF2C14E;
-const COL_BTN = 0x1A222B, COL_BTN_ACT = 0x1E3A3A, COL_BTN_DIS = 0x11161C, COL_TEXT_DIM = 0x525A65;
+// Colors matching Lua palette
+const K_FELT      = "#0B2B1E";
+const K_FDK       = "#082016";
+const K_FLN       = "#164A35";
+const K_BAR       = "#0E1318";
+const K_CBG       = "#F5F7FA";
+const K_CSH       = "#06150E";
+const K_CBK       = "#1B4F8A";
+const K_CTR       = "#4A8FE7";
+const K_RED       = "#D9383A";
+const K_BLK       = "#181C24";
+const K_GLD       = "#F2C14E";
+const K_ACCENT    = "#15B6A6";
+const K_BTN       = "#1A222B";
+const K_BACT      = "#1E3A3A";
+const K_BDIS      = "#11161C";
+const K_DIM       = "#525A65";
+const K_TEXT      = "#E6E9ED";
+const K_SUB       = "#7A7F87";
+const K_GOOD      = "#10B981";
+const K_BAD       = "#EF4444";
 
 const RANKS = ["A","2","3","4","5","6","7","8","9","10","J","Q","K"];
 const MIN_BET = 10, MAX_BET = 1000, START_BANK = 500;
 
-let bankroll = START_BANK, best_bank = START_BANK, base_bet = 25, wins = 0, rounds = 0, sound_on = true;
-let state = "betting", shoe = [], dealer_hand = [], dealer_hide = true, hands = [], cur_hand = 1;
-let banner_title = "", banner_sub = "", banner_col = C.accent;
-let active_btns = [], focus_idx = 1, dealerTimer = null;
+let bank = START_BANK, best_bank = START_BANK, base_bet = 25;
+let wins = 0, rounds = 0, sound_on = true;
+let state = "betting", d_hide = true;
+let shoe = [], d_hand = [], hands = [], btns = [];
+let shoe_top = 0, cur_hand = 1, f_idx = 1;
+let b_tit = "", b_sub = "", b_col = K_ACCENT;
+let dealerTimer = null;
+let audioCtx = null;
 
 const I = x => Math.floor(Number(x) || 0);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+function tw(str, sz = f_sm) {
+  ctx.font = `600 ${sz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+  return Math.floor(ctx.measureText(String(str)).width);
+}
+function th(sz = f_sm) { return sz + 4; }
+function tcx(cx, y, s, col, sz) {
+  ctx.fillStyle = col;
+  ctx.font = `600 ${sz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(String(s), cx, y);
+}
+
+function box(x, y, w, h, bg, fg, r = 0) {
+  x = I(x); y = I(y); w = I(w); h = I(h);
+  ctx.beginPath();
+  if (r && ctx.roundRect) ctx.roundRect(x, y, w, h, r);
+  else ctx.rect(x, y, w, h);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  if (fg) {
+    ctx.strokeStyle = fg;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function sfx(kind) {
+  if (!sound_on) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (kind === "chip") {
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1400, now + 0.03);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.005, now + 0.04);
+      osc.start(now); osc.stop(now + 0.04);
+    } else if (kind === "card") {
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(700, now + 0.05);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+      osc.start(now); osc.stop(now + 0.06);
+    } else if (kind === "win") {
+      osc.frequency.setValueAtTime(523.25, now);
+      osc.frequency.setValueAtTime(659.25, now + 0.08);
+      osc.frequency.setValueAtTime(783.99, now + 0.16);
+      osc.frequency.setValueAtTime(1046.50, now + 0.24);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
+      osc.start(now); osc.stop(now + 0.38);
+    } else if (kind === "bj") {
+      osc.frequency.setValueAtTime(587.33, now);
+      osc.frequency.setValueAtTime(739.99, now + 0.1);
+      osc.frequency.setValueAtTime(880.00, now + 0.2);
+      osc.frequency.setValueAtTime(1174.66, now + 0.32);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      osc.start(now); osc.stop(now + 0.5);
+    } else if (kind === "bust") {
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(180, now + 0.14);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+      osc.start(now); osc.stop(now + 0.16);
+    }
+  } catch(e) {}
+}
+
+function showToast(msg) {
+  toastEl.innerText = msg;
+  toastEl.style.opacity = '1';
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => { toastEl.style.opacity = '0'; }, 1600);
+}
+
+function compute_layout() {
+  const s = Math.min(W, H), l = Math.max(W, H);
+  portrait = (H > W);
+  if (l >= 1185 || (W === 568 && H >= 900) || (W >= 1185 && H >= 460)) {
+    dev_name = "T-Display P4 AMOLED"; is_p4 = true; s2 = true;
+  } else if ((l >= 1050 && l < 1185) || (W === 540 && H >= 900) || (W >= 500 && W < 560 && H >= 900)) {
+    dev_name = "T-Display P4 LCD"; is_p4 = true; s2 = true;
+  } else if (l >= 700 || s >= 460) {
+    dev_name = "Large HD"; is_p4 = false; s2 = true;
+  } else {
+    dev_name = (W >= 440 && H < 320) ? "Wide Compact" : ((portrait && W <= 260) ? "Compact Portrait" : "T-Deck");
+    is_p4 = false; s2 = false;
+  }
+
+  if (s2) { f_sm = 14; f_md = 16; f_lg = 20; f_xl = 24; f_rk = 16; }
+  else { f_sm = 12; f_md = 12; f_lg = 14; f_xl = 16; f_rk = 12; }
+  lh_sm = th(f_sm); lh_md = th(f_md); lh_lg = th(f_lg); lh_xl = th(f_xl);
+
+  if (s2) {
+    top_h = I(Math.max(lh_md + 16, 40));
+    bot_h = portrait ? I(Math.max(lh_md + 42, 72)) : I(Math.max(lh_md + 26, 54));
+    pad = 14; gap = 8;
+  } else {
+    top_h = I(Math.max(lh_sm + 4, 20));
+    bot_h = I(Math.max(lh_sm + 14, 30));
+    pad = 6; gap = 4;
+  }
+  tbl_h = Math.max(80, H - top_h - bot_h);
+
+  if (is_p4 && portrait) {
+    cw = I(clamp(W * 0.175, 88, 104)); ch = I(clamp(cw * 1.40, 122, 148));
+    ov = I(cw * 0.55); s_ov = I(cw * 0.38); p_sm = 6; p_lg = 14;
+  } else if (s2) {
+    ch = I(clamp(tbl_h * 0.30, 88, 128)); cw = I(ch * 0.72);
+    ov = I(cw * 0.56); s_ov = I(cw * 0.44); p_sm = 5; p_lg = 12;
+  } else if (portrait) {
+    cw = I(clamp(W * 0.16, 32, 42)); ch = I(clamp(cw * 1.38, 44, 58));
+    ov = I(cw * 0.54); s_ov = I(cw * 0.38); p_sm = 3; p_lg = 5;
+  } else {
+    cw = 34; ch = clamp(I(tbl_h * 0.29), 42, 48);
+    ov = 20; s_ov = 16; p_sm = 3; p_lg = 5;
+  }
+}
+
+function switchDevice(key) {
+  currentDev = DEVICES[key];
+  W = currentDev.w;
+  H = currentDev.h;
+
+  document.querySelectorAll('.dev-pill').forEach(el => el.classList.remove('active'));
+  event.target.classList.add('active');
+
+  document.getElementById('bezel-name').innerText = currentDev.name.toUpperCase();
+  document.getElementById('bezel-spec').innerText = currentDev.spec;
+  document.getElementById('device-shell').style.width = currentDev.shellW + 'px';
+
+  canvas.width = W;
+  canvas.height = H;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+
+  compute_layout();
+  build_btns();
+  draw_screen();
+}
+
+// Shoe & Card Evaluation
 function build_shoe() {
   shoe = [];
   for (let d = 0; d < 6; d++)
@@ -369,11 +585,14 @@ function build_shoe() {
     const j = Math.floor(Math.random() * (i + 1));
     [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
   }
+  shoe_top = shoe.length;
 }
 
 function draw_card() {
-  if (shoe.length < 52) { build_shoe(); showToast("Shoe reshuffled"); }
-  return shoe.pop();
+  if (shoe_top < 52) { build_shoe(); showToast("Shoe reshuffled"); }
+  shoe_top--;
+  sfx("card");
+  return shoe[shoe_top];
 }
 
 const card_val = r => r === 1 ? 11 : (r >= 10 ? 10 : r);
@@ -389,15 +608,15 @@ function eval_hand(cards) {
   return [total, aces > 0 && total <= 21, cards.length === 2 && total === 21];
 }
 
-const can_split = () => state === "player" && hands.length === 1 && hands[0].cards.length === 2 && bankroll >= hands[0].bet && card_val(hands[0].cards[0].r) === card_val(hands[0].cards[1].r);
-const can_double = () => state === "player" && hands[cur_hand - 1] && hands[cur_hand - 1].cards.length === 2 && bankroll >= hands[cur_hand - 1].bet;
+const can_split = () => state === "player" && hands.length === 1 && hands[0].cards.length === 2 && bank >= hands[0].bet && card_val(hands[0].cards[0].r) === card_val(hands[0].cards[1].r);
+const can_double = () => state === "player" && hands[cur_hand - 1] && hands[cur_hand - 1].cards.length === 2 && bank >= hands[cur_hand - 1].bet;
 
 function next_hand_or_dealer() {
   if (cur_hand < hands.length) {
     cur_hand++;
     const h = hands[cur_hand - 1];
     if (eval_hand(h.cards)[0] === 21) { h.status = "stand"; next_hand_or_dealer(); return; }
-    rebuild_buttons(); draw_screen();
+    build_btns(); draw_screen();
   } else {
     start_dealer_turn();
   }
@@ -406,23 +625,26 @@ function next_hand_or_dealer() {
 function do_hit() {
   if (state !== "player") return;
   const h = hands[cur_hand - 1];
+  if (!h || h.status !== "play") return;
   h.cards.push(draw_card());
   const [tot] = eval_hand(h.cards);
   if (tot > 21) { h.status = "bust"; next_hand_or_dealer(); }
   else if (tot === 21) { h.status = "stand"; next_hand_or_dealer(); }
-  else { rebuild_buttons(); draw_screen(); }
+  else { build_btns(); draw_screen(); }
 }
 
 function do_stand() {
   if (state !== "player") return;
-  hands[cur_hand - 1].status = "stand";
+  const h = hands[cur_hand - 1];
+  if (!h || h.status !== "play") return;
+  h.status = "stand";
   next_hand_or_dealer();
 }
 
 function do_double() {
   if (!can_double()) return;
   const h = hands[cur_hand - 1];
-  bankroll -= h.bet;
+  bank -= h.bet;
   h.bet *= 2;
   h.cards.push(draw_card());
   h.status = eval_hand(h.cards)[0] > 21 ? "bust" : "doubled";
@@ -433,28 +655,28 @@ function do_split() {
   if (!can_split()) return;
   const h1 = hands[0];
   const c2 = h1.cards.pop();
-  bankroll -= h1.bet;
+  bank -= h1.bet;
   const h2 = { cards: [c2, draw_card()], bet: h1.bet, status: "play" };
   h1.cards.push(draw_card());
   hands.push(h2);
   cur_hand = 1;
   if (eval_hand(h1.cards)[0] === 21) { h1.status = "stand"; next_hand_or_dealer(); return; }
-  rebuild_buttons(); draw_screen();
+  build_btns(); draw_screen();
 }
 
 function start_dealer_turn() {
   const any_alive = hands.some(h => h.status !== "bust");
-  dealer_hide = false;
+  d_hide = false;
   if (!any_alive) { settle_round(); return; }
-  if (eval_hand(dealer_hand)[0] < 17) {
+  if (eval_hand(d_hand)[0] < 17) {
     state = "dealer";
-    rebuild_buttons(); draw_screen();
+    build_btns(); draw_screen();
     clearInterval(dealerTimer);
     dealerTimer = setInterval(() => {
-      if (eval_hand(dealer_hand)[0] < 17) {
-        dealer_hand.push(draw_card());
+      if (eval_hand(d_hand)[0] < 17) {
+        d_hand.push(draw_card());
         draw_screen();
-        if (eval_hand(dealer_hand)[0] >= 17) settle_round();
+        if (eval_hand(d_hand)[0] >= 17) settle_round();
       } else settle_round();
     }, 420);
   } else settle_round();
@@ -463,8 +685,8 @@ function start_dealer_turn() {
 function settle_round() {
   clearInterval(dealerTimer);
   state = "done";
-  dealer_hide = false;
-  const [d_tot, , d_bj] = eval_hand(dealer_hand);
+  d_hide = false;
+  const [d_tot, , d_bj] = eval_hand(d_hand);
   let net_delta = 0, bj_win = false;
 
   for (const h of hands) {
@@ -473,341 +695,393 @@ function settle_round() {
     if (h.status === "bust") { h.result = "BUST"; net_delta -= h.bet; }
     else if (is_nat_bj && !d_bj) {
       const win_amt = I((h.bet * 3) / 2);
-      bankroll += h.bet + win_amt; net_delta += win_amt; h.result = "BJ!"; bj_win = true;
+      bank += h.bet + win_amt; net_delta += win_amt; h.result = "BJ!"; bj_win = true;
     } else if (d_bj && !is_nat_bj) { h.result = "LOSE"; net_delta -= h.bet; }
-    else if (is_nat_bj && d_bj) { bankroll += h.bet; h.result = "PUSH"; }
-    else if (d_tot > 21 || p_tot > d_tot) { bankroll += h.bet * 2; net_delta += h.bet; h.result = "WIN"; }
-    else if (p_tot === d_tot) { bankroll += h.bet; h.result = "PUSH"; }
+    else if (is_nat_bj && d_bj) { bank += h.bet; h.result = "PUSH"; }
+    else if (d_tot > 21 || p_tot > d_tot) { bank += h.bet * 2; net_delta += h.bet; h.result = "WIN"; }
+    else if (p_tot === d_tot) { bank += h.bet; h.result = "PUSH"; }
     else { h.result = "LOSE"; net_delta -= h.bet; }
   }
   rounds++;
   if (net_delta > 0) wins++;
-  if (bankroll > best_bank) best_bank = bankroll;
+  if (bank > best_bank) best_bank = bank;
 
-  if (bj_win) { banner_title = "BLACKJACK!"; banner_sub = `+$${net_delta}  (3:2 Payout)`; banner_col = COL_GOLD; }
-  else if (net_delta > 0) { banner_title = d_tot > 21 ? "DEALER BUSTS!" : "YOU WIN!"; banner_sub = `+$${net_delta}`; banner_col = C.good; }
+  if (bj_win) { b_tit = "BLACKJACK!"; b_sub = `+$${net_delta}  (3:2 Payout)`; b_col = K_GLD; sfx("bj"); }
+  else if (net_delta > 0) { b_tit = d_tot > 21 ? "DEALER BUSTS!" : "YOU WIN!"; b_sub = `+$${net_delta}`; b_col = K_GOOD; sfx("win"); }
   else if (net_delta < 0) {
-    banner_title = (hands.length === 1 && hands[0].status === "bust") ? "BUST!" : (d_bj ? "DEALER BLACKJACK" : "DEALER WINS");
-    banner_sub = `-$${Math.abs(net_delta)}`; banner_col = C.bad;
-  } else { banner_title = "PUSH"; banner_sub = "Bet returned"; banner_col = C.accent; }
+    b_tit = (hands.length === 1 && hands[0].status === "bust") ? "BUST!" : (d_bj ? "DEALER BLACKJACK" : "DEALER WINS");
+    b_sub = `-$${Math.abs(net_delta)}`; b_col = K_BAD; sfx("bust");
+  } else { b_tit = "PUSH"; b_sub = "Bet returned"; b_col = K_ACCENT; sfx("chip"); }
 
-  if (bankroll < MIN_BET) base_bet = MIN_BET;
-  else if (base_bet > bankroll) base_bet = bankroll;
-  rebuild_buttons(); draw_screen();
+  if (bank < MIN_BET) base_bet = MIN_BET;
+  else if (base_bet > bank) base_bet = bank;
+  build_btns(); draw_screen();
 }
 
 function start_deal() {
-  if (bankroll < MIN_BET) { bankroll = START_BANK; base_bet = 25; showToast("Free $500 bailout chips!"); }
-  base_bet = clamp(base_bet, MIN_BET, Math.min(MAX_BET, bankroll));
-  bankroll -= base_bet;
-  dealer_hand = [draw_card(), draw_card()];
-  dealer_hide = true;
+  if (bank < MIN_BET) { bank = START_BANK; base_bet = 25; showToast("Free $500 bailout chips!"); }
+  base_bet = clamp(base_bet, MIN_BET, Math.min(MAX_BET, bank));
+  bank -= base_bet;
+  d_hand = [draw_card(), draw_card()];
+  d_hide = true;
   hands = [{ cards: [draw_card(), draw_card()], bet: base_bet, status: "play" }];
   cur_hand = 1;
   state = "player";
   const [, , p_bj] = eval_hand(hands[0].cards);
-  const [, , d_bj] = eval_hand(dealer_hand);
+  const [, , d_bj] = eval_hand(d_hand);
   if (p_bj || d_bj) {
     if (p_bj) hands[0].status = "bj";
-    dealer_hide = false;
+    d_hide = false;
     settle_round();
     return;
   }
-  rebuild_buttons(); draw_screen();
+  build_btns(); draw_screen();
 }
 
 function adjust_bet(delta) {
-  if (bankroll < MIN_BET) { bankroll = START_BANK; showToast("Bailout: +$500 chips"); }
-  base_bet = clamp(base_bet + delta, MIN_BET, Math.min(MAX_BET, bankroll));
+  if (bank < MIN_BET) { bank = START_BANK; showToast("Bailout: +$500 chips"); }
+  base_bet = I(clamp(base_bet + delta, MIN_BET, Math.min(MAX_BET, bank)));
+  sfx("chip");
+  build_btns();
   draw_screen();
 }
 
-function rebuild_buttons() {
+function build_btns() {
+  const c = (W < 280);
   if (state === "betting") {
-    active_btns = [
+    btns = [
       { label: "-50", enabled: true, fn: () => adjust_bet(-50) },
       { label: "-10", enabled: true, fn: () => adjust_bet(-10) },
       { label: "+10", enabled: true, fn: () => adjust_bet(10) },
       { label: "+50", enabled: true, fn: () => adjust_bet(50) },
-      { label: "MAX", enabled: true, fn: () => { base_bet = Math.min(MAX_BET, Math.max(MIN_BET, bankroll)); draw_screen(); } },
+      { label: "MAX", enabled: true, fn: () => { base_bet = I(Math.min(MAX_BET, Math.max(MIN_BET, bank))); sfx("chip"); build_btns(); draw_screen(); } },
       { label: "DEAL", primary: true, enabled: true, fn: start_deal }
     ];
-    focus_idx = 6;
+    f_idx = 6;
   } else if (state === "player") {
-    active_btns = [
-      { label: "HIT [H]", primary: true, enabled: true, fn: do_hit },
-      { label: "STAND [S]", enabled: true, fn: do_stand },
-      { label: "DBL [D]", enabled: can_double(), fn: do_double },
-      { label: "SPLIT [P]", enabled: can_split(), fn: do_split }
+    btns = [
+      { label: c ? "HIT" : "HIT [H]", primary: true, enabled: true, fn: do_hit },
+      { label: c ? "STAND" : "STAND [S]", enabled: true, fn: do_stand },
+      { label: c ? "DBL" : "DBL [D]", enabled: can_double(), fn: do_double },
+      { label: c ? "SPLIT" : "SPLIT [P]", enabled: can_split(), fn: do_split }
     ];
-    focus_idx = 1;
+    f_idx = 1;
   } else if (state === "dealer") {
-    active_btns = [{ label: "DEALER DRAWING...", enabled: false, fn: () => {} }];
-    focus_idx = 1;
+    btns = [{ label: "DEALER DRAWING...", enabled: false, fn: () => {} }];
+    f_idx = 1;
   } else if (state === "done") {
-    active_btns = [
-      { label: "BET [B]", enabled: true, fn: () => { state = "betting"; rebuild_buttons(); draw_screen(); } },
-      { label: "-10", enabled: bankroll >= MIN_BET + 10, fn: () => adjust_bet(-10) },
-      { label: "+10", enabled: bankroll >= base_bet + 10, fn: () => adjust_bet(10) },
-      { label: "DEAL $" + clamp(base_bet, MIN_BET, Math.max(MIN_BET, bankroll)), primary: true, enabled: true, fn: start_deal }
+    const amt = I(clamp(base_bet, MIN_BET, Math.max(MIN_BET, bank)));
+    btns = [
+      { label: c ? "BET" : "BET [B]", enabled: true, fn: () => { state = "betting"; build_btns(); draw_screen(); } },
+      { label: "-10", enabled: bank >= MIN_BET + 10, fn: () => adjust_bet(-10) },
+      { label: "+10", enabled: bank >= base_bet + 10, fn: () => adjust_bet(10) },
+      { label: `DEAL $${amt}`, primary: true, enabled: true, fn: start_deal }
     ];
-    focus_idx = 4;
+    f_idx = 4;
   }
 }
 
-function draw_suit_pip(x, y, suit, scale) {
-  x = I(x); y = I(y);
-  const col = (suit === 2 || suit === 3) ? COL_RED : COL_BLACK;
-  if (scale === "small") {
-    if (suit === 1) {
-      cv.line(x, y - 3, x, y - 3, col, 1);
-      cv.line(x - 1, y - 2, x + 1, y - 2, col, 1);
-      cv.line(x - 2, y - 1, x + 2, y - 1, col, 1);
-      cv.line(x - 3, y, x + 3, y, col, 1);
-      cv.line(x - 2, y + 1, x + 2, y + 1, col, 1);
-      cv.line(x - 1, y + 2, x + 1, y + 2, col, 1);
-      cv.line(x - 2, y + 3, x + 2, y + 3, col, 1);
-    } else if (suit === 2) {
-      cv.line(x - 2, y - 2, x - 1, y - 2, col, 1);
-      cv.line(x + 1, y - 2, x + 2, y - 2, col, 1);
-      cv.line(x - 3, y - 1, x + 3, y - 1, col, 1);
-      cv.line(x - 3, y, x + 3, y, col, 1);
-      cv.line(x - 2, y + 1, x + 2, y + 1, col, 1);
-      cv.line(x - 1, y + 2, x + 1, y + 2, col, 1);
-      cv.line(x, y + 3, x, y + 3, col, 1);
-    } else if (suit === 3) {
-      for (let dy = -3; dy <= 3; dy++) cv.line(x - (3 - Math.abs(dy)), y + dy, x + (3 - Math.abs(dy)), y + dy, col, 1);
-    } else {
-      cv.circle(x, y - 2, 1, col, true);
-      cv.circle(x - 2, y, 1, col, true);
-      cv.circle(x + 2, y, 1, col, true);
-      cv.line(x, y - 1, x, y + 3, col, 1);
-      cv.line(x - 1, y + 3, x + 1, y + 3, col, 1);
+// Vector Card and Suit Pip Rendering matching Lua app
+function draw_pip(x, y, suit, r) {
+  x = I(x); y = I(y); r = Math.max(3, I(r));
+  const col = (suit === 2 || suit === 3) ? K_RED : K_BLK;
+  ctx.fillStyle = col;
+  ctx.strokeStyle = col;
+
+  if (suit === 1) { // Spade
+    const bb = I(r * 0.25), span = Math.max(1, r + bb);
+    for (let dy = -r; dy <= bb; dy++) {
+      const hw = I(((dy + r) * r) / span);
+      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 1);
     }
-  } else {
-    if (suit === 1) {
-      for (let dy = -5; dy <= 1; dy++) {
-        const hw = I((dy + 5) * 0.85);
-        cv.line(x - hw, y + dy, x + hw, y + dy, col, 1);
-      }
-      cv.circle(x - 2, y + 1, 2, col, true);
-      cv.circle(x + 2, y + 1, 2, col, true);
-      cv.rect(x - 1, y + 2, 3, 4, col, true);
-      cv.line(x - 3, y + 5, x + 3, y + 5, col, 1);
-    } else if (suit === 2) {
-      cv.circle(x - 3, y - 2, 2, col, true);
-      cv.circle(x + 3, y - 2, 2, col, true);
-      for (let dy = -1; dy <= 5; dy++) {
-        const hw = Math.max(0, 5 - dy);
-        cv.line(x - hw, y + dy, x + hw, y + dy, col, 1);
-      }
-    } else if (suit === 3) {
-      for (let dy = -5; dy <= 5; dy++) {
-        const hw = 5 - Math.abs(dy);
-        cv.line(x - hw, y + dy, x + hw, y + dy, col, 1);
-      }
-    } else {
-      cv.circle(x, y - 3, 2, col, true);
-      cv.circle(x - 3, y + 1, 2, col, true);
-      cv.circle(x + 3, y + 1, 2, col, true);
-      cv.rect(x - 1, y, 3, 6, col, true);
-      cv.line(x - 3, y + 5, x + 3, y + 5, col, 1);
+    const lr = Math.max(1, I(r * 0.36)), lx = Math.max(1, I(r * 0.42)), ly = I(r * 0.22);
+    ctx.beginPath(); ctx.arc(x - lx, y + ly, lr, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + lx, y + ly, lr, 0, Math.PI * 2); ctx.fill();
+    const sw = Math.max(1, I(r * 0.22) * 2 + 1), st = I(r * 0.25), bhw = Math.max(2, I(r * 0.55));
+    ctx.fillRect(x - I(sw / 2), y + st, sw, Math.max(2, r - st + 1));
+    ctx.fillRect(x - bhw, y + r, bhw * 2 + 1, Math.max(1, I(r * 0.18)));
+  } else if (suit === 2) { // Heart
+    const lr = Math.max(1, I(r * 0.46)), lx = Math.max(1, I(r * 0.46)), ly = I(r * 0.32);
+    ctx.beginPath(); ctx.arc(x - lx, y - ly, lr, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + lx, y - ly, lr, 0, Math.PI * 2); ctx.fill();
+    const td = -I(r * 0.18), span = Math.max(1, r - td);
+    for (let dy = td; dy <= r; dy++) {
+      const hw = Math.max(0, I(((r - dy) * r) / span));
+      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 1);
     }
+  } else if (suit === 3) { // Diamond
+    for (let dy = -r; dy <= r; dy++) {
+      const hw = Math.max(0, r - Math.abs(dy));
+      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 1);
+    }
+  } else { // Club
+    const lr = Math.max(1, I(r * 0.38)), lx = Math.max(2, I(r * 0.48)), ty = I(r * 0.48), by = I(r * 0.14);
+    ctx.beginPath(); ctx.arc(x, y - ty, lr, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x - lx, y + by, lr, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + lx, y + by, lr, 0, Math.PI * 2); ctx.fill();
+    const sw = Math.max(1, I(r * 0.22) * 2 + 1), bhw = Math.max(2, I(r * 0.52));
+    ctx.fillRect(x - I(sw / 2), y - I(r * 0.1), sw, Math.max(2, r + I(r * 0.1) + 1));
+    ctx.fillRect(x - bhw, y + r, bhw * 2 + 1, Math.max(1, I(r * 0.18)));
   }
 }
 
-function draw_playing_card(x, y, cw, ch, card, hidden) {
-  x = I(x); y = I(y); cw = I(cw); ch = I(ch);
-  cv.rect(x + 2, y + 2, cw, ch, COL_CARD_SHAD, true, 4);
+function draw_card_ui(x, y, w, h, card, hidden, sm_ov, lg_ov) {
+  x = I(x); y = I(y); w = I(w); h = I(h);
+  const rad = w >= 64 ? 8 : 4, shad = w >= 64 ? 4 : 2;
+  const sm = sm_ov || p_sm, lg = lg_ov || p_lg, rfsz = w >= 64 ? f_rk : 12;
+
+  box(x + shad, y + shad, w, h, K_CSH, null, rad);
   if (hidden) {
-    cv.rect(x, y, cw, ch, COL_CARD_BG, true, 4);
-    cv.rect(x + 2, y + 2, cw - 4, ch - 4, COL_CARD_BACK, true, 3);
-    cv.rect(x + 4, y + 4, cw - 8, ch - 8, COL_CARD_TRIM, false, 2);
-    cv.circle(I(x + cw / 2), I(y + ch / 2), 5, COL_GOLD, false);
-    cv.circle(I(x + cw / 2), I(y + ch / 2), 2, COL_GOLD, true);
+    const p1 = w >= 64 ? 4 : 2, p2 = w >= 64 ? 8 : 4;
+    box(x, y, w, h, K_CBG, null, rad);
+    box(x + p1, y + p1, w - p1 * 2, h - p1 * 2, K_CBK, null, Math.max(2, rad - 1));
+    box(x + p2, y + p2, w - p2 * 2, h - p2 * 2, "transparent", K_CTR, Math.max(2, rad - 2));
+    const mx = I(x + w / 2), my = I(y + h / 2), er = Math.max(5, I(w * 0.16));
+    ctx.beginPath(); ctx.arc(mx, my, er, 0, Math.PI * 2); ctx.strokeStyle = K_GLD; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.arc(mx, my, Math.max(2, I(er * 0.42)), 0, Math.PI * 2); ctx.fillStyle = K_GLD; ctx.fill();
     return;
   }
-  cv.rect(x, y, cw, ch, COL_CARD_BG, true, 4);
-  cv.rect(x, y, cw, ch, 0xCBD2D9, false, 4);
-  const col = (card.s === 2 || card.s === 3) ? COL_RED : COL_BLACK;
-  cv.text(x + 3, y + 2, RANKS[card.r - 1], col, 12);
-  draw_suit_pip(x + cw - 7, y + 8, card.s, "small");
-  draw_suit_pip(x + I(cw / 2), y + I(ch / 2) + 4, card.s, "large");
+
+  box(x, y, w, h, K_CBG, "#CBD2D9", rad);
+  const col = (card.s === 2 || card.s === 3) ? K_RED : K_BLK;
+  const rstr = RANKS[card.r - 1];
+  const px = w >= 64 ? 6 : 3, py = w >= 64 ? 4 : 2;
+
+  ctx.fillStyle = col;
+  ctx.font = `700 ${rfsz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText(rstr, x + px, y + py);
+
+  if (w >= 30) draw_pip(x + w - sm - px - 1, y + py + sm + 2, card.s, sm);
+  if (w >= 68 && h >= 96) {
+    ctx.textAlign = "right";
+    ctx.fillText(rstr, x + w - px, y + h - py - th(rfsz));
+    draw_pip(x + px + sm + 1, y + h - py - sm - 3, card.s, sm);
+  }
+  const cy = (w >= 68) ? I(y + h / 2) : (y + I(h / 2) + 4);
+  draw_pip(x + I(w / 2), h >= 42 ? cy : (y + I(h / 2) + 3), card.s, h >= 42 ? lg : sm);
 }
 
-function draw_hand_cards(cards, cx, y, cw, ch, overlap, hide_second) {
+function draw_hand(cards, cx, y, w, h, step_x, hide2) {
   const n = cards.length;
   if (!n) return;
-  const total_w = cw + (n - 1) * overlap;
-  const start_x = I(cx - total_w / 2);
-  for (let i = 0; i < n; i++) {
-    draw_playing_card(start_x + i * overlap, y, cw, ch, cards[i], hide_second && i === 1);
-  }
+  const max_span = Math.max(w + 12, W - 24);
+  let eff = step_x;
+  if (w + (n - 1) * eff > max_span && n > 1) eff = Math.max(12, I((max_span - w) / (n - 1)));
+  const sx = I(cx - (w + (n - 1) * eff) / 2);
+  for (let i = 0; i < n; i++) draw_card_ui(sx + i * eff, y, w, h, cards[i], hide2 && i === 1);
 }
 
+function draw_pill(cx, y, str, tcol, bcol) {
+  const l_h = th(f_md), w = tw(str, f_md);
+  const pw = w + (s2 ? 28 : 16), ph = l_h + (s2 ? 10 : 6);
+  box(I(cx - pw / 2), I(y), pw, ph, "#0D151C", bcol || K_FLN, 6);
+  tcx(cx, I(y) + I((ph - l_h) / 2), str, tcol || K_TEXT, f_md);
+  return ph;
+}
+
+// Main Render Loop
 function draw_screen() {
-  const top_h = 20, bot_h = 30, table_h = H - top_h - bot_h;
-  cv.fill(COL_FELT);
-  cv.rect(4, top_h + 3, W - 8, table_h - 6, COL_FELT_LINE, false, 8);
-  cv.rect(0, 0, W, top_h, COL_TOPBAR, true);
-  cv.line(0, top_h, W, top_h, 0x1F2933, 1);
+  const cx = I(W / 2), m = s2 ? 8 : 4;
+  ctx.fillStyle = K_FELT;
+  ctx.fillRect(0, 0, W, H);
+  box(m, top_h + m - 1, W - m * 2, tbl_h - (m - 1) * 2, "transparent", K_FLN, s2 ? 12 : 8);
 
-  cv.text(6, 3, `BANK $${bankroll}`, COL_GOLD, 12);
-  let active_bet = base_bet;
-  if (state !== "betting" && hands.length > 0) active_bet = hands.reduce((s, h) => s + h.bet, 0);
-  cv.text(I(W * 0.40), 3, `BET $${active_bet}`, C.accent, 12);
+  // Top Bar
+  box(0, 0, W, top_h, K_BAR, null, 0);
+  ctx.strokeStyle = "#1F2933";
+  ctx.beginPath(); ctx.moveTo(0, top_h + 0.5); ctx.lineTo(W, top_h + 0.5); ctx.stroke();
 
-  const right_str = `PEAK $${best_bank} ${sound_on ? "" : "[M]"}`;
-  cv.text(Math.max(I(W * 0.68), W - text_w(right_str, 12) - 6), 3, right_str, C.sub, 12);
+  const tfsz = s2 ? f_md : f_sm;
+  const tty = Math.max(1, I((top_h - th(tfsz)) / 2));
+  ctx.fillStyle = K_GLD;
+  ctx.font = `600 ${tfsz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText(`BANK $${bank}`, pad, tty);
 
-  const cw = 34;
-  const ch = clamp(I(table_h * 0.29), 42, 48);
-  const overlap = 20;
+  let abet = base_bet;
+  if (state !== "betting" && hands.length > 0) abet = hands.reduce((sum, h) => sum + h.bet, 0);
+  const bstr = `BET $${abet}`;
+  const bx0 = I((W - tw(bstr, tfsz)) / 2);
+  ctx.fillStyle = K_ACCENT;
+  ctx.fillText(bstr, bx0, tty);
+
+  const rstr = `PEAK $${best_bank}${sound_on ? "" : " [M]"}`;
+  ctx.fillStyle = K_SUB;
+  ctx.textAlign = "right";
+  ctx.fillText(rstr, W - pad, tty);
 
   if (state === "betting") {
-    const pad_x = 12, box_w = W - pad_x * 2;
-    cv.rect(pad_x, top_h + 8, box_w, table_h - 16, 0x082016, true, 8);
-    cv.rect(pad_x, top_h + 8, box_w, table_h - 16, COL_FELT_LINE, false, 8);
-    draw_playing_card(pad_x + 10, top_h + 18, 30, 42, { r: 1, s: 1 }, false);
-    draw_playing_card(W - pad_x - 40, top_h + 18, 30, 42, { r: 13, s: 2 }, false);
+    const px = s2 ? 20 : 12, py = s2 ? 16 : 8;
+    const bw = W - px * 2, bh = tbl_h - py * 2, by = top_h + py;
+    box(px, by, bw, bh, K_FDK, K_FLN, s2 ? 12 : 8);
+    const wlbl = `WAGER: $${base_bet}`;
+    const ww = tw(wlbl, f_xl);
 
-    const title = "BLACKJACK 21";
-    cv.text(I((W - text_w(title, 16)) / 2), top_h + 18, title, COL_GOLD, 16);
-    const sub = "3:2 Payout  ·  Stands on 17";
-    cv.text(I((W - text_w(sub, 12)) / 2), top_h + 42, sub, C.sub, 12);
+    if (portrait && s2) {
+      let cy = by + I(bh * 0.07);
+      tcx(cx, cy, "BLACKJACK 21", K_GLD, f_xl); cy += lh_xl + 10;
+      tcx(cx, cy, "3:2 Natural Payout  ·  Dealer Stands on 17", K_SUB, f_sm); cy += lh_sm + 6;
+      tcx(cx, cy, `${dev_name}  (${W}×${H})`, K_FLN, f_sm); cy += lh_sm + I(bh * 0.05);
 
-    const wager_lbl = `WAGER: $${base_bet}`;
-    const ww = text_w(wager_lbl, 16);
-    const pill_y = top_h + 74;
-    cv.rect(I((W - ww) / 2) - 14, pill_y, ww + 28, 26, COL_BTN_ACT, true, 6);
-    cv.rect(I((W - ww) / 2) - 14, pill_y, ww + 28, 26, C.accent, false, 6);
-    cv.text(I((W - ww) / 2), pill_y + 4, wager_lbl, C.text, 16);
+      draw_card_ui(cx - cw - 12, cy, cw, ch, { r: 1, s: 1 }, false);
+      draw_card_ui(cx + 12, cy, cw, ch, { r: 13, s: 2 }, false);
+      cy += ch + I(bh * 0.06);
 
-    const hint = "Tap buttons or [Up/Down] Bet  [D] Deal";
-    cv.text(I((W - text_w(hint, 12)) / 2), top_h + table_h - 26, hint, C.sub, 12);
-  } else {
-    const d_cards_y = top_h + 6, cards_cx = I(W * 0.58);
-    let d_val_str;
-    if (dealer_hide) d_val_str = `${card_val(dealer_hand[0].r)} + ?`;
-    else {
-      const [dtot, , dbj] = eval_hand(dealer_hand);
-      d_val_str = dbj ? "21 (BJ)" : `${dtot}`;
+      const ph = lh_xl + 24, pw = ww + 56;
+      box(cx - I(pw / 2), cy, pw, ph, K_BACT, K_ACCENT, 10);
+      tcx(cx, cy + I((ph - lh_xl) / 2), wlbl, K_TEXT, f_xl); cy += ph + I(bh * 0.05);
+
+      const pct = rounds > 0 ? I((wins * 100) / rounds) : 0;
+      tcx(cx, cy, `Hands: ${rounds}   ·   Won: ${wins} (${pct}%)   ·   Shoe: ${shoe_top} cards`, K_SUB, f_sm);
+      tcx(cx, by + bh - lh_sm - 18, "Tap chip buttons below to adjust wager, then tap DEAL", K_SUB, f_sm);
+    } else {
+      const dw = s2 ? 64 : 30, dh = s2 ? 90 : 42, dsm = s2 ? 4 : 3, dlg = s2 ? 9 : 5;
+      if (W >= 280) {
+        draw_card_ui(px + 10, by + 10, dw, dh, { r: 1, s: 1 }, false, dsm, dlg);
+        draw_card_ui(W - px - dw - 10, by + 10, dw, dh, { r: 13, s: 2 }, false, dsm, dlg);
+      }
+      tcx(cx, by + 10, "BLACKJACK 21", K_GLD, f_xl);
+      const sy = by + 10 + lh_xl + 4;
+      tcx(cx, sy, "3:2 Payout  ·  Stands on 17", K_SUB, f_sm);
+
+      const ph = lh_xl + (s2 ? 16 : 8), pw = ww + (s2 ? 40 : 28);
+      const wy = Math.max(sy + lh_sm + 10, I(by + (bh - ph) * 0.54));
+      box(cx - I(pw / 2), wy, pw, ph, K_BACT, K_ACCENT, 6);
+      tcx(cx, wy + I((ph - lh_xl) / 2), wlbl, K_TEXT, f_xl);
+
+      const hy = by + bh - lh_sm - (s2 ? 12 : 6);
+      if (hy > wy + ph + 4) {
+        tcx(cx, hy, W >= 300 ? "Tap buttons or [Up/Down] Bet  [D] Deal" : "Tap buttons below to Bet & Deal", K_SUB, f_sm);
+      }
     }
-    cv.text(12, d_cards_y + 6, "DEALER", C.sub, 12);
-    cv.text(12, d_cards_y + 22, d_val_str, C.text, 14);
-    draw_hand_cards(dealer_hand, cards_cx, d_cards_y, cw, ch, overlap, dealer_hide);
+  } else {
+    const [dtot, , dbj] = eval_hand(d_hand);
+    const vpad = portrait ? (s2 ? 22 : 8) : (s2 ? 12 : 6);
+    const ccx = portrait ? cx : I(W * 0.58), lx = s2 ? 22 : 12;
+    let dcy = top_h + vpad;
+    const pcy = top_h + tbl_h - ch - vpad;
+    const phb = pcy - (s2 ? 12 : 6);
 
-    const p_cards_y = top_h + table_h - ch - 6;
+    if (portrait) {
+      const dstr = d_hide ? `DEALER: ${card_val(d_hand[0].r)} + ?` : (dbj ? "DEALER: 21 (BLACKJACK)" : `DEALER: ${dtot}`);
+      dcy = top_h + vpad + draw_pill(cx, top_h + vpad, dstr, K_TEXT, K_FLN) + (s2 ? 14 : 6);
+    } else {
+      ctx.fillStyle = K_SUB; ctx.font = `600 ${f_sm}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+      ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("DEALER", lx, dcy + 4);
+      ctx.fillStyle = K_TEXT; ctx.font = `700 ${f_lg}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+      ctx.fillText(d_hide ? `${card_val(d_hand[0].r)} + ?` : (dbj ? "21 (BJ)" : `${dtot}`), lx, dcy + 6 + lh_sm);
+    }
+    draw_hand(d_hand, ccx, dcy, cw, ch, ov, d_hide);
+
     if (hands.length === 1) {
       const h = hands[0];
       const [ptot, psoft, pbj] = eval_hand(h.cards);
-      const p_val_str = pbj ? "21 (BJ!)" : (psoft && ptot <= 21 && state === "player" ? `${ptot - 10} / ${ptot}` : `${ptot}`);
-      const p_col = h.status === "bust" ? C.bad : (pbj ? COL_GOLD : C.text);
-      cv.text(12, p_cards_y + 6, "PLAYER", C.sub, 12);
-      cv.text(12, p_cards_y + 22, p_val_str, p_col, 14);
-      draw_hand_cards(h.cards, cards_cx, p_cards_y, cw, ch, overlap, false);
+      const pcol = h.status === "bust" ? K_BAD : (pbj ? K_GLD : K_TEXT);
+      if (portrait) {
+        const pstr = pbj ? `PLAYER: 21 (BJ!)  ·  $${h.bet}`
+          : ((psoft && ptot <= 21 && state === "player") ? `PLAYER: ${ptot - 10} / ${ptot}  ·  $${h.bet}` : `PLAYER: ${ptot}  ·  $${h.bet}`);
+        draw_pill(cx, phb - (lh_md + (s2 ? 10 : 6)), pstr, pcol, h.status === "bust" ? K_BAD : (pbj ? K_GLD : K_ACCENT));
+      } else {
+        ctx.fillStyle = K_SUB; ctx.font = `600 ${f_sm}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+        ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillText("PLAYER", lx, pcy + 4);
+        ctx.fillStyle = pcol; ctx.font = `700 ${f_lg}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+        const pstr = pbj ? "21 (BJ!)" : ((psoft && ptot <= 21 && state === "player") ? `${ptot - 10} / ${ptot}` : `${ptot}`);
+        ctx.fillText(pstr, lx, pcy + 6 + lh_sm);
+      }
+      draw_hand(h.cards, ccx, pcy, cw, ch, ov, false);
     } else {
-      const split_overlap = 16;
       for (let idx = 0; idx < 2; idx++) {
         const h = hands[idx];
-        const h_cx = idx === 0 ? I(W * 0.28) : I(W * 0.74);
-        const is_active = state === "player" && cur_hand === idx + 1;
-        if (is_active) cv.rect(h_cx - 60, p_cards_y - 2, 120, ch + 4, C.accent, false, 5);
-        const [ptot] = eval_hand(h.cards);
+        const hcx = idx === 0 ? I(W * (portrait ? 0.27 : 0.28)) : I(W * (portrait ? 0.73 : 0.74));
+        const act = (state === "player" && cur_hand === idx + 1);
+        const bhw = portrait ? I(W * 0.22) : (s2 ? 140 : 60);
+        if (act) box(hcx - bhw, pcy - 3, bhw * 2, ch + 6, "transparent", K_ACCENT, 5);
         const tag = h.result || (h.status === "bust" ? "BUST" : `$${h.bet}`);
-        const lbl = `H${idx + 1}:${ptot} (${tag})`;
-        cv.text(h_cx - I(text_w(lbl, 12) / 2), p_cards_y - 14, lbl, is_active ? C.accent : (h.status === "bust" ? C.bad : C.text), 12);
-        draw_hand_cards(h.cards, h_cx, p_cards_y, cw, ch, split_overlap, false);
+        const lbl = portrait ? `H${idx + 1}: ${eval_hand(h.cards)[0]} (${tag})` : `H${idx + 1}:${eval_hand(h.cards)[0]} (${tag})`;
+        tcx(hcx, portrait ? (phb - lh_sm) : (pcy - lh_sm - 2), lbl, act ? K_ACCENT : (h.status === "bust" ? K_BAD : K_TEXT), f_sm);
+        draw_hand(h.cards, hcx, pcy, cw, ch, s_ov, false);
       }
     }
 
-    const mid_top = d_cards_y + ch + 3;
-    const mid_bot = hands.length > 1 ? (p_cards_y - 16) : (p_cards_y - 3);
-    const mid_cy = I((mid_top + mid_bot) / 2);
+    const mtop = dcy + ch + (portrait ? 8 : 3);
+    const mbot = portrait ? (phb - (lh_md + 16)) : ((hands.length > 1) ? (pcy - lh_sm - 4) : (pcy - 3));
+    const mcy = I((mtop + mbot) / 2);
 
-    if (state === "done" && banner_title) {
-      const bw = Math.min(W - 24, Math.max(164, text_w(banner_title, 14) + 32)), bh = 32;
-      const bx = I((W - bw) / 2), by = I(mid_cy - bh / 2);
-      cv.rect(bx, by, bw, bh, 0x0D131A, true, 6);
-      cv.rect(bx, by, bw, bh, banner_col, false, 6);
-      cv.text(I((W - text_w(banner_title, 14)) / 2), by + 2, banner_title, banner_col, 14);
-      cv.text(I((W - text_w(banner_sub, 12)) / 2), by + 17, banner_sub, C.text, 12);
+    if (state === "done" && b_tit) {
+      const sf = portrait ? f_md : f_sm, slh = portrait ? lh_md : lh_sm;
+      const bw = Math.min(W - 24, Math.max(s2 ? 280 : 164, Math.max(tw(b_tit, f_lg), tw(b_sub, sf)) + (s2 ? 44 : 32)));
+      const bh = lh_lg + slh + (portrait ? (s2 ? 28 : 12) : (s2 ? 14 : 4));
+      const bx = cx - I(bw / 2), by = I(mcy - bh / 2);
+      box(bx, by, bw, bh, "#0D131A", b_col, 6);
+      const ty = by + (portrait ? (s2 ? 8 : 3) : 2);
+      tcx(cx, ty, b_tit, b_col, f_lg);
+      tcx(cx, ty + lh_lg + (portrait ? (s2 ? 6 : 2) : 0), b_sub, K_TEXT, sf);
     } else {
-      cv.line(24, mid_cy, W - 24, mid_cy, COL_FELT_LINE, 1);
+      const lm = (portrait && s2) ? 48 : 24;
+      ctx.strokeStyle = K_FLN; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(lm, mcy + 0.5); ctx.lineTo(W - lm, mcy + 0.5); ctx.stroke();
+      if (portrait && s2 && (mbot - mtop) >= lh_sm * 2 + 20) {
+        tcx(cx, mcy - lh_sm - 8, "BLACKJACK PAYS 3 TO 2  ·  DEALER STANDS ON ALL 17", K_FLN, f_sm);
+        tcx(cx, mcy + 8, state === "dealer" ? "Dealer is drawing..." : "Choose your action below", K_SUB, f_sm);
+      }
     }
   }
 
+  // Bottom Buttons Bar
   const by = H - bot_h;
-  cv.rect(0, by, W, bot_h, COL_BOTBAR, true);
-  cv.line(0, by, W, by, 0x1F2933, 1);
+  box(0, by, W, bot_h, K_BAR, null, 0);
+  ctx.strokeStyle = "#1F2933";
+  ctx.beginPath(); ctx.moveTo(0, by + 0.5); ctx.lineTo(W, by + 0.5); ctx.stroke();
 
-  const nb = active_btns.length;
+  const nb = btns.length;
   if (nb > 0) {
-    const gap = 4, bw = I((W - gap * (nb + 1)) / nb), bh = bot_h - 6;
+    const pv = s2 ? 8 : 3, bfsz = s2 ? f_md : f_sm, brad = s2 ? 8 : 4;
+    const bw = I((W - gap * (nb + 1)) / nb), bh = bot_h - pv * 2, blh = th(bfsz);
     for (let i = 0; i < nb; i++) {
-      const b = active_btns[i];
-      const bx = gap + i * (bw + gap), bby = by + 3;
+      const b = btns[i], bx = gap + i * (bw + gap), bby = by + pv;
       b.x = bx; b.y = bby; b.w = bw; b.h = bh;
-      const bg = !b.enabled ? COL_BTN_DIS : (b.primary ? COL_BTN_ACT : COL_BTN);
-      cv.rect(bx, bby, bw, bh, bg, true, 4);
-      if (i + 1 === focus_idx && b.enabled) cv.rect(bx, bby, bw, bh, b.primary ? COL_GOLD : C.accent, false, 4);
-      else if (b.enabled) cv.rect(bx, bby, bw, bh, 0x2B3642, false, 4);
-      const tcol = !b.enabled ? COL_TEXT_DIM : (b.primary ? COL_GOLD : C.text);
-      const tw = text_w(b.label, 12);
-      cv.text(bx + Math.max(2, I((bw - tw) / 2)), bby + I((bh - 12) / 2), b.label, tcol, 12);
+      const bg = !b.enabled ? K_BDIS : (b.primary ? K_BACT : K_BTN);
+      const fg = (i + 1 === f_idx && b.enabled) ? (b.primary ? K_GLD : K_ACCENT) : (b.enabled ? "#2B3642" : null);
+      box(bx, bby, bw, bh, bg, fg, brad);
+
+      let lbl = b.label;
+      if (tw(lbl, bfsz) > bw - 6 && lbl.includes(" [")) lbl = lbl.replace(/ \[.*\]/, "");
+      ctx.fillStyle = !b.enabled ? K_DIM : (b.primary ? K_GLD : K_TEXT);
+      ctx.font = `600 ${bfsz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(lbl, bx + bw / 2, bby + bh / 2);
     }
   }
 }
 
 function cycle_focus(dir) {
-  const n = active_btns.length;
+  const n = btns.length;
   if (!n) return;
   for (let i = 0; i < n; i++) {
-    focus_idx = ((focus_idx - 1 + dir + n) % n) + 1;
-    if (active_btns[focus_idx - 1].enabled) break;
+    f_idx = ((f_idx - 1 + dir + n) % n) + 1;
+    if (btns[f_idx - 1] && btns[f_idx - 1].enabled) break;
   }
   draw_screen();
 }
 
-canvas.addEventListener('mousedown', e => {
-  if (state === "dealer") return;
-  const r = canvas.getBoundingClientRect();
-  const ex = (e.clientX - r.left) * (W / r.width);
-  const ey = (e.clientY - r.top) * (H / r.height);
-  for (let i = 0; i < active_btns.length; i++) {
-    const b = active_btns[i];
-    if (ex >= b.x && ex <= b.x + b.w && ey >= b.y && ey <= b.y + b.h) {
-      if (b.enabled) { focus_idx = i + 1; b.fn(); }
-      return;
-    }
-  }
-  if (ey <= 20 && ex >= W - 64) {
-    sound_on = !sound_on;
-    showToast(sound_on ? "Sound ON" : "Sound OFF");
-    draw_screen();
-    return;
-  }
-  if (state === "done" && ey > 22 && ey < H - 32) start_deal();
-});
-
-function sendSwipe(dir) {
-  if (state === "dealer") return;
-  if (dir === "left") cycle_focus(-1);
-  else if (dir === "right") cycle_focus(1);
-  else if (dir === "up") (state === "player") ? do_hit() : adjust_bet(25);
-  else if (dir === "down") (state === "player") ? do_stand() : adjust_bet(-25);
-}
-
-function sendKey(k) {
+function triggerKey(k) {
   if (state === "dealer") return;
   k = k.toLowerCase();
   if (k === "left" || k === "a") cycle_focus(-1);
   else if (k === "right" || k === "l") cycle_focus(1);
-  else if (k === "up" || k === "w" || k === "+" || k === "=") { if (state !== "player") adjust_bet(10); }
-  else if (k === "down" || k === "z" || k === "-") { if (state !== "player") adjust_bet(-10); }
-  else if (k === "enter" || k === " ") {
-    const b = active_btns[focus_idx - 1];
-    if (b && b.enabled) b.fn();
+  else if (k === "up" || k === "w" || k === "+" || k === "=") {
+    if (state === "betting" || state === "done") adjust_bet(10);
+    else if (state === "player") do_hit();
+  } else if (k === "down" || k === "z" || k === "-") {
+    if (state === "betting" || state === "done") adjust_bet(-10);
+    else if (state === "player") do_stand();
+  } else if (k === "enter" || k === " ") {
+    const b = btns[f_idx - 1];
+    if (b && b.enabled && b.fn) b.fn();
   } else if (k === "m") {
     sound_on = !sound_on;
     showToast(sound_on ? "Sound ON" : "Sound OFF");
@@ -819,20 +1093,69 @@ function sendKey(k) {
     else if (k === "p") do_split();
   } else if (state === "betting" || state === "done") {
     if (k === "d" || k === "h") start_deal();
-    else if (k === "b" && state === "done") { state = "betting"; rebuild_buttons(); draw_screen(); }
+    else if (k === "b" && state === "done") { state = "betting"; build_btns(); draw_screen(); }
     else if (k === "c") { base_bet = MIN_BET; draw_screen(); }
-    else if (k === "x") { base_bet = Math.min(MAX_BET, Math.max(MIN_BET, bankroll)); draw_screen(); }
+    else if (k === "x") { base_bet = Math.min(MAX_BET, Math.max(MIN_BET, bank)); draw_screen(); }
   }
 }
 
-window.addEventListener('keydown', e => {
-  const map = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Enter: 'enter', ' ': ' ' };
-  if (map[e.key]) { e.preventDefault(); sendKey(map[e.key]); }
-  else if (e.key.length === 1) sendKey(e.key);
+// Canvas Touch & Click Event
+canvas.addEventListener('click', (e) => {
+  if (state === "dealer") return;
+  const r = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / r.width;
+  const scaleY = canvas.height / r.height;
+  const ex = (e.clientX - r.left) * scaleX;
+  const ey = (e.clientY - r.top) * scaleY;
+
+  // Bottom buttons
+  for (let i = 0; i < btns.length; i++) {
+    const b = btns[i];
+    if (b.x && ex >= b.x && ex <= b.x + b.w && ey >= b.y && ey <= b.y + b.h) {
+      if (b.enabled && b.fn) { f_idx = i + 1; b.fn(); }
+      return;
+    }
+  }
+
+  // Mute toggle (top right)
+  if (ey <= top_h && ex >= W - I(W * 0.28)) {
+    sound_on = !sound_on;
+    showToast(sound_on ? "Sound ON" : "Sound OFF");
+    draw_screen();
+    return;
+  }
+
+  // Tap table after hand to deal
+  if (state === "done" && ey > top_h + 2 && ey < H - bot_h - 2) {
+    start_deal();
+    return;
+  }
 });
 
+// Window Keyboard Listeners
+window.addEventListener('keydown', (e) => {
+  const map = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", Enter: "enter", " ": " " };
+  if (map[e.key]) { e.preventDefault(); triggerKey(map[e.key]); }
+  else if (e.key.length === 1) triggerKey(e.key);
+});
+
+document.querySelectorAll('.key').forEach(el => {
+  el.addEventListener('click', () => {
+    const k = el.getAttribute('data-k');
+    triggerKey(k);
+    el.classList.add('pressed');
+    setTimeout(() => el.classList.remove('pressed'), 120);
+  });
+});
+
+document.getElementById('trackball').addEventListener('click', () => {
+  triggerKey('enter');
+});
+
+// Initial boot
 build_shoe();
-rebuild_buttons();
+compute_layout();
+build_btns();
 draw_screen();
 </script>
 </body>
