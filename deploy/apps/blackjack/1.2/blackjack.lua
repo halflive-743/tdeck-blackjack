@@ -471,7 +471,7 @@ draw_screen = function()
  cv:text(top_margin, tty, string.format("BANK $%d", bank), K_GLD, tfsz)
 
  local abet = base_bet
- if state ~= "betting" and #hands > 0 then
+ if (state == "player" or state == "dealer") and #hands > 0 then
   abet = 0; for i = 1, #hands do abet = abet + hands[i].bet end
  end
  local bstr = string.format("BET $%d", abet)
@@ -687,8 +687,8 @@ function app.on_input(ev)
   elseif state == "betting" or state == "done" then
    if k == "d" or k == "h" then start_deal()
    elseif k == "b" and state == "done" then state = "betting"; build_btns(); draw_screen()
-   elseif k == "c" then base_bet = MIN_BET; draw_screen()
-   elseif k == "x" then base_bet = math.min(MAX_BET, math.max(MIN_BET, bank)); draw_screen() end
+   elseif k == "c" then base_bet = MIN_BET; build_btns(); draw_screen()
+   elseif k == "x" then base_bet = math.min(MAX_BET, math.max(MIN_BET, bank)); build_btns(); draw_screen() end
   end
  end
 end

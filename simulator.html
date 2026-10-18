@@ -938,7 +938,7 @@ function draw_screen() {
   ctx.fillText(`BANK $${bank}`, top_margin, tty);
 
   let abet = base_bet;
-  if (state !== "betting" && hands.length > 0) abet = hands.reduce((sum, h) => sum + h.bet, 0);
+  if ((state === "player" || state === "dealer") && hands.length > 0) abet = hands.reduce((sum, h) => sum + h.bet, 0);
   const bstr = `BET $${abet}`;
   const bx0 = I((W - tw(bstr, tfsz)) / 2);
   ctx.fillStyle = K_ACCENT;
@@ -1137,8 +1137,8 @@ function triggerKey(k) {
   } else if (state === "betting" || state === "done") {
     if (k === "d" || k === "h") start_deal();
     else if (k === "b" && state === "done") { state = "betting"; build_btns(); draw_screen(); }
-    else if (k === "c") { base_bet = MIN_BET; draw_screen(); }
-    else if (k === "x") { base_bet = Math.min(MAX_BET, Math.max(MIN_BET, bank)); draw_screen(); }
+    else if (k === "c") { base_bet = MIN_BET; build_btns(); draw_screen(); }
+    else if (k === "x") { base_bet = Math.min(MAX_BET, Math.max(MIN_BET, bank)); build_btns(); draw_screen(); }
   }
 }
 
