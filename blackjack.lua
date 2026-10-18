@@ -1,4 +1,4 @@
--- Blackjack 21 — WADAMESH Lua app for LilyGo T-Deck, T-Display P4 (AMOLED/LCD), & MeshCore boards
+-- Blackjack 21 (Beta ver 1.2) — WADAMESH Lua app for LilyGo T-Deck, T-Display P4 (AMOLED/LCD), & MeshCore boards
 local ui, sys, store, timer = wada.ui, wada.sys, wada.store, wada.timer
 local C = ui.colors
 local app = {}
@@ -349,38 +349,68 @@ build_btns = function()
  end
 end
 
+local function disk(tc, cx, cy, r, c)
+ r = math.max(1, I(r)); local k = math.max(1, I(r * 0.68))
+ tc:rect(cx - k, cy - r, k * 2 + 1, r * 2 + 1, c, true)
+ tc:rect(cx - r, cy - k, r * 2 + 1, k * 2 + 1, c, true)
+end
+
+local P2 = {
+ {0,-2,1,1,-1,-1,3,1,-2,0,5,2,0,2,1,2},{-2,-2,2,1,1,-2,2,1,-2,-1,5,2,-1,1,3,1,0,2,1,1},
+ {0,-2,1,1,-1,-1,3,1,-2,0,5,1,-1,1,3,1,0,2,1,1},{-1,-2,3,1,0,-1,1,1,-2,0,5,2,0,2,1,2},
+}
+local P4 = {
+ {0,-3,1,1,-1,-2,3,1,-2,-1,5,1,-3,0,7,2,0,2,1,1,-1,3,3,1},
+ {-2,-3,2,1,1,-3,2,1,-3,-2,3,1,1,-2,3,1,-3,-1,7,2,-2,1,5,1,-1,2,3,1,0,3,1,1},
+ {0,-3,1,1,-1,-2,3,1,-2,-1,5,1,-3,0,7,1,-2,1,5,1,-1,2,3,1,0,3,1,1},
+ {-1,-3,3,2,-3,-1,2,2,2,-1,2,2,-1,-1,3,2,0,1,1,2,-1,3,3,1},
+}
+local P5 = {
+ {0,-5,1,1,-1,-4,3,1,-2,-3,5,1,-3,-2,7,1,-4,-1,9,1,-5,0,11,2,-4,2,3,1,0,2,1,1,2,2,3,1,-1,3,3,1,-2,4,5,1,-3,5,7,1},
+ {-3,-5,2,1,2,-5,2,1,-4,-4,4,1,1,-4,4,1,-5,-3,11,3,-4,0,9,1,-3,1,7,1,-2,2,5,1,-1,3,3,1,0,4,1,2},
+ {0,-5,1,1,-1,-4,3,1,-2,-3,5,2,-3,-1,7,1,-4,0,9,1,-3,1,7,1,-2,2,5,2,-1,4,3,1,0,5,1,1},
+ {-1,-5,3,1,-2,-4,5,2,-1,-2,3,1,-4,-1,3,1,0,-1,1,1,2,-1,3,1,-5,0,11,2,-4,2,3,1,0,2,1,1,2,2,3,1,-1,3,3,2,-3,5,7,1},
+}
+
 local function draw_pip(x, y, suit, r)
- x, y, r = I(x), I(y), math.max(3, I(r))
- local col, step = (suit == 2 or suit == 3) and K_RED or K_BLK, r >= 9 and 2 or 1
+ x, y, r = I(x), I(y), math.max(2, I(r))
+ local col = (suit == 2 or suit == 3) and K_RED or K_BLK
  local tc, ox, oy, tiles = cv, 0, 0, cv.tiles
  if tiles then
+  local x1, y1, x2, y2 = x - r - 2, y - r - 2, x + r + 2, y + r + 4
   for i = 1, #tiles do
    local t = tiles[i]
-   if x - r - 2 >= t.x and x + r + 2 <= t.x2 and y - r - 2 >= t.y and y + r + 4 <= t.y2 then tc, ox, oy = t.c, t.x, t.y; break end
+   if x1 >= t.x and x2 <= t.x2 and y1 >= t.y and y2 <= t.y2 then tc, ox, oy = t.c, t.x, t.y; break end
   end
  end
  local px, py = x - ox, y - oy
+ local tb = (r <= 2) and P2 or ((r <= 4) and P4 or ((r == 5) and P5 or nil))
+ if tb then
+  local d = tb[suit] or tb[4]
+  for i = 1, #d, 4 do tc:rect(px + d[i], py + d[i + 1], d[i + 2], d[i + 3], col, true) end
+  return
+ end
  if suit == 1 then
-  local bb, span = I(r * 0.25), math.max(1, r + I(r * 0.25))
-  for dy = -r, bb, step do local hw = I(((dy + r) * r) / span); tc:rect(px - hw, py + dy, hw * 2 + 1, step, col, true) end
-  local lr, lx, ly = math.max(1, I(r * 0.36)), math.max(1, I(r * 0.42)), I(r * 0.22)
-  tc:circle(px - lx, py + ly, lr, col, true); tc:circle(px + lx, py + ly, lr, col, true)
-  local sw, st, bhw = math.max(1, I(r * 0.22) * 2 + 1), I(r * 0.25), math.max(2, I(r * 0.55))
+  local bt = I(r * 0.25); local sp = math.max(1, r + bt)
+  for dy = -r, bt, 2 do local hw = I(((dy + r) * r) / sp); tc:rect(px - hw, py + dy, hw * 2 + 1, 2, col, true) end
+  local lr, lx, ly = math.max(2, I(r * 0.36)), math.max(2, I(r * 0.42)), I(r * 0.22)
+  disk(tc, px - lx, py + ly, lr, col); disk(tc, px + lx, py + ly, lr, col)
+  local sw, st, bw = math.max(1, I(r * 0.22) * 2 + 1), I(r * 0.25), math.max(2, I(r * 0.55))
   tc:rect(px - I(sw / 2), py + st, sw, math.max(2, r - st + 1), col, true)
-  tc:rect(px - bhw, py + r, bhw * 2 + 1, math.max(1, I(r * 0.18)), col, true)
+  tc:rect(px - bw, py + r, bw * 2 + 1, math.max(1, I(r * 0.18)), col, true)
  elseif suit == 2 then
-  local lr, lx, ly = math.max(1, I(r * 0.46)), math.max(1, I(r * 0.46)), I(r * 0.32)
-  tc:circle(px - lx, py - ly, lr, col, true); tc:circle(px + lx, py - ly, lr, col, true)
-  local td, span = -I(r * 0.18), math.max(1, r + I(r * 0.18))
-  for dy = td, r, step do local hw = math.max(0, I(((r - dy) * r) / span)); tc:rect(px - hw, py + dy, hw * 2 + 1, step, col, true) end
+  local lr, lx, ly, td = math.max(2, I(r * 0.46)), math.max(2, I(r * 0.46)), I(r * 0.32), -I(r * 0.18)
+  disk(tc, px - lx, py - ly, lr, col); disk(tc, px + lx, py - ly, lr, col)
+  local sp = math.max(1, r - td)
+  for dy = td, r, 2 do local hw = math.max(0, I(((r - dy) * r) / sp)); tc:rect(px - hw, py + dy, hw * 2 + 1, 2, col, true) end
  elseif suit == 3 then
-  for dy = -r, r, step do local hw = math.max(0, r - math.abs(dy)); tc:rect(px - hw, py + dy, hw * 2 + 1, step, col, true) end
+  for dy = -r, r, 2 do local hw = math.max(0, I((r - math.abs(dy)) * 0.85)); tc:rect(px - hw, py + dy, hw * 2 + 1, 2, col, true) end
  else
-  local lr, lx, ty, by = math.max(1, I(r * 0.38)), math.max(2, I(r * 0.48)), I(r * 0.48), I(r * 0.14)
-  tc:circle(px, py - ty, lr, col, true); tc:circle(px - lx, py + by, lr, col, true); tc:circle(px + lx, py + by, lr, col, true)
-  local sw, bhw = math.max(1, I(r * 0.22) * 2 + 1), math.max(2, I(r * 0.52))
+  local lr, lx, ty, by = math.max(2, I(r * 0.38)), math.max(2, I(r * 0.48)), I(r * 0.48), I(r * 0.14)
+  disk(tc, px, py - ty, lr, col); disk(tc, px - lx, py + by, lr, col); disk(tc, px + lx, py + by, lr, col)
+  local sw, bw = math.max(1, I(r * 0.22) * 2 + 1), math.max(2, I(r * 0.52))
   tc:rect(px - I(sw / 2), py - I(r * 0.1), sw, math.max(2, r + I(r * 0.1) + 1), col, true)
-  tc:rect(px - bhw, py + r, bhw * 2 + 1, math.max(1, I(r * 0.18)), col, true)
+  tc:rect(px - bw, py + r, bw * 2 + 1, math.max(1, I(r * 0.18)), col, true)
  end
 end
 
@@ -390,15 +420,17 @@ local function draw_card_ui(x, y, w, h, card, hidden, sm_ov, lg_ov)
  local sm, lg, rfsz = sm_ov or p_sm, lg_ov or p_lg, (w >= 64) and f_rk or 12
  cv:rect(x + shad, y + shad, w, h, K_CSH, true, rad)
  if hidden then
-  local p1, p2 = w >= 64 and 4 or 2, w >= 64 and 8 or 4
+  local p1, p2 = w >= 64 and 3 or 1, w >= 64 and 6 or 3
   cv:rect(x, y, w, h, K_CBG, true, rad)
   cv:rect(x + p1, y + p1, w - p1 * 2, h - p1 * 2, K_CBK, true, math.max(2, rad - 1))
-  cv:rect(x + p2, y + p2, w - p2 * 2, h - p2 * 2, K_CTR, false, math.max(2, rad - 2))
-  local mx, my, er = I(x + w / 2), I(y + h / 2), math.max(5, I(w * 0.16))
-  cv:circle(mx, my, er, K_GLD, false); cv:circle(mx, my, math.max(2, I(er * 0.42)), K_GLD, true)
+  if w >= 26 then
+   cv:rect(x + p2, y + p2, w - p2 * 2, h - p2 * 2, K_CTR, false, math.max(2, rad - 2))
+   local ew, eh = math.max(6, I(w * 0.28)), math.max(6, I(h * 0.22))
+   cv:rect(I(x + (w - ew) / 2), I(y + (h - eh) / 2), ew, eh, K_GLD, false, 2)
+  end
   return
  end
- box(x, y, w, h, K_CBG, 0xCBD2D9, rad)
+ box(x, y, w, h, K_CBG, 0x64748B, rad)
  local col, rstr = (card.s == 2 or card.s == 3) and K_RED or K_BLK, RANKS[card.r]
  local px, py = w >= 64 and 6 or 3, w >= 64 and 4 or 2
  cv:text(x + px, y + py, rstr, col, rfsz)

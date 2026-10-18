@@ -782,47 +782,80 @@ function build_btns() {
   }
 }
 
+const P2 = [
+  [0,-2,1,1,-1,-1,3,1,-2,0,5,2,0,2,1,2],
+  [-2,-2,2,1,1,-2,2,1,-2,-1,5,2,-1,1,3,1,0,2,1,1],
+  [0,-2,1,1,-1,-1,3,1,-2,0,5,1,-1,1,3,1,0,2,1,1],
+  [-1,-2,3,1,0,-1,1,1,-2,0,5,2,0,2,1,2]
+];
+const P4 = [
+  [0,-3,1,1,-1,-2,3,1,-2,-1,5,1,-3,0,7,2,0,2,1,1,-1,3,3,1],
+  [-2,-3,2,1,1,-3,2,1,-3,-2,3,1,1,-2,3,1,-3,-1,7,2,-2,1,5,1,-1,2,3,1,0,3,1,1],
+  [0,-3,1,1,-1,-2,3,1,-2,-1,5,1,-3,0,7,1,-2,1,5,1,-1,2,3,1,0,3,1,1],
+  [-1,-3,3,2,-3,-1,2,2,2,-1,2,2,-1,-1,3,2,0,1,1,2,-1,3,3,1]
+];
+const P5 = [
+  [0,-5,1,1,-1,-4,3,1,-2,-3,5,1,-3,-2,7,1,-4,-1,9,1,-5,0,11,2,-4,2,3,1,0,2,1,1,2,2,3,1,-1,3,3,1,-2,4,5,1,-3,5,7,1],
+  [-3,-5,2,1,2,-5,2,1,-4,-4,4,1,1,-4,4,1,-5,-3,11,3,-4,0,9,1,-3,1,7,1,-2,2,5,1,-1,3,3,1,0,4,1,2],
+  [0,-5,1,1,-1,-4,3,1,-2,-3,5,2,-3,-1,7,1,-4,0,9,1,-3,1,7,1,-2,2,5,2,-1,4,3,1,0,5,1,1],
+  [-1,-5,3,1,-2,-4,5,2,-1,-2,3,1,-4,-1,3,1,0,-1,1,1,2,-1,3,1,-5,0,11,2,-4,2,3,1,0,2,1,1,2,2,3,1,-1,3,3,2,-3,5,7,1]
+];
+
+function disk(cx, cy, r, c) {
+  r = Math.max(1, I(r));
+  const k = Math.max(1, I(r * 0.68));
+  ctx.fillStyle = c;
+  ctx.fillRect(cx - k, cy - r, k * 2 + 1, r * 2 + 1);
+  ctx.fillRect(cx - r, cy - k, r * 2 + 1, k * 2 + 1);
+}
+
 // Vector Card and Suit Pip Rendering matching Lua app
 function draw_pip(x, y, suit, r) {
-  x = I(x); y = I(y); r = Math.max(3, I(r));
+  x = I(x); y = I(y); r = Math.max(2, I(r));
   const col = (suit === 2 || suit === 3) ? K_RED : K_BLK;
   ctx.fillStyle = col;
-  ctx.strokeStyle = col;
-
-  if (suit === 1) { // Spade
-    const bb = I(r * 0.25), span = Math.max(1, r + bb);
-    for (let dy = -r; dy <= bb; dy++) {
-      const hw = I(((dy + r) * r) / span);
-      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 1);
+  const tb = (r <= 2) ? P2 : ((r <= 4) ? P4 : ((r === 5) ? P5 : null));
+  if (tb) {
+    const d = tb[suit - 1] || tb[3];
+    for (let i = 0; i < d.length; i += 4) {
+      ctx.fillRect(x + d[i], y + d[i + 1], d[i + 2], d[i + 3]);
     }
-    const lr = Math.max(1, I(r * 0.36)), lx = Math.max(1, I(r * 0.42)), ly = I(r * 0.22);
-    ctx.beginPath(); ctx.arc(x - lx, y + ly, lr, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + lx, y + ly, lr, 0, Math.PI * 2); ctx.fill();
-    const sw = Math.max(1, I(r * 0.22) * 2 + 1), st = I(r * 0.25), bhw = Math.max(2, I(r * 0.55));
+    return;
+  }
+  if (suit === 1) { // Spade
+    const bt = I(r * 0.25), sp = Math.max(1, r + bt);
+    for (let dy = -r; dy <= bt; dy += 2) {
+      const hw = I(((dy + r) * r) / sp);
+      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 2);
+    }
+    const lr = Math.max(2, I(r * 0.36)), lx = Math.max(2, I(r * 0.42)), ly = I(r * 0.22);
+    disk(x - lx, y + ly, lr, col);
+    disk(x + lx, y + ly, lr, col);
+    const sw = Math.max(1, I(r * 0.22) * 2 + 1), st = I(r * 0.25), bw = Math.max(2, I(r * 0.55));
     ctx.fillRect(x - I(sw / 2), y + st, sw, Math.max(2, r - st + 1));
-    ctx.fillRect(x - bhw, y + r, bhw * 2 + 1, Math.max(1, I(r * 0.18)));
+    ctx.fillRect(x - bw, y + r, bw * 2 + 1, Math.max(1, I(r * 0.18)));
   } else if (suit === 2) { // Heart
-    const lr = Math.max(1, I(r * 0.46)), lx = Math.max(1, I(r * 0.46)), ly = I(r * 0.32);
-    ctx.beginPath(); ctx.arc(x - lx, y - ly, lr, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + lx, y - ly, lr, 0, Math.PI * 2); ctx.fill();
-    const td = -I(r * 0.18), span = Math.max(1, r - td);
-    for (let dy = td; dy <= r; dy++) {
-      const hw = Math.max(0, I(((r - dy) * r) / span));
-      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 1);
+    const lr = Math.max(2, I(r * 0.46)), lx = Math.max(2, I(r * 0.46)), ly = I(r * 0.32), td = -I(r * 0.18);
+    disk(x - lx, y - ly, lr, col);
+    disk(x + lx, y - ly, lr, col);
+    const sp = Math.max(1, r - td);
+    for (let dy = td; dy <= r; dy += 2) {
+      const hw = Math.max(0, I(((r - dy) * r) / sp));
+      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 2);
     }
   } else if (suit === 3) { // Diamond
-    for (let dy = -r; dy <= r; dy++) {
-      const hw = Math.max(0, r - Math.abs(dy));
-      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 1);
+    for (let dy = -r; dy <= r; dy += 2) {
+      const hw = Math.max(0, I((r - Math.abs(dy)) * 0.85));
+      ctx.fillRect(x - hw, y + dy, hw * 2 + 1, 2);
     }
   } else { // Club
-    const lr = Math.max(1, I(r * 0.38)), lx = Math.max(2, I(r * 0.48)), ty = I(r * 0.48), by = I(r * 0.14);
-    ctx.beginPath(); ctx.arc(x, y - ty, lr, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x - lx, y + by, lr, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(x + lx, y + by, lr, 0, Math.PI * 2); ctx.fill();
-    const sw = Math.max(1, I(r * 0.22) * 2 + 1), bhw = Math.max(2, I(r * 0.52));
+    const lr = Math.max(2, I(r * 0.38)), lx = Math.max(2, I(r * 0.48)), ty = I(r * 0.48), by = I(r * 0.14);
+    disk(x, y - ty, lr, col);
+    disk(x - lx, y + by, lr, col);
+    disk(x + lx, y + by, lr, col);
+    const sw = Math.max(1, I(r * 0.22) * 2 + 1), bw = Math.max(2, I(r * 0.52));
     ctx.fillRect(x - I(sw / 2), y - I(r * 0.1), sw, Math.max(2, r + I(r * 0.1) + 1));
-    ctx.fillRect(x - bhw, y + r, bhw * 2 + 1, Math.max(1, I(r * 0.18)));
+    ctx.fillRect(x - bw, y + r, bw * 2 + 1, Math.max(1, I(r * 0.18)));
   }
 }
 
@@ -833,17 +866,18 @@ function draw_card_ui(x, y, w, h, card, hidden, sm_ov, lg_ov) {
 
   box(x + shad, y + shad, w, h, K_CSH, null, rad);
   if (hidden) {
-    const p1 = w >= 64 ? 4 : 2, p2 = w >= 64 ? 8 : 4;
+    const p1 = w >= 64 ? 3 : 1, p2 = w >= 64 ? 6 : 3;
     box(x, y, w, h, K_CBG, null, rad);
     box(x + p1, y + p1, w - p1 * 2, h - p1 * 2, K_CBK, null, Math.max(2, rad - 1));
-    box(x + p2, y + p2, w - p2 * 2, h - p2 * 2, "transparent", K_CTR, Math.max(2, rad - 2));
-    const mx = I(x + w / 2), my = I(y + h / 2), er = Math.max(5, I(w * 0.16));
-    ctx.beginPath(); ctx.arc(mx, my, er, 0, Math.PI * 2); ctx.strokeStyle = K_GLD; ctx.lineWidth = 1; ctx.stroke();
-    ctx.beginPath(); ctx.arc(mx, my, Math.max(2, I(er * 0.42)), 0, Math.PI * 2); ctx.fillStyle = K_GLD; ctx.fill();
+    if (w >= 26) {
+      box(x + p2, y + p2, w - p2 * 2, h - p2 * 2, "transparent", K_CTR, Math.max(2, rad - 2));
+      const ew = Math.max(6, I(w * 0.28)), eh = Math.max(6, I(h * 0.22));
+      box(I(x + (w - ew) / 2), I(y + (h - eh) / 2), ew, eh, "transparent", K_GLD, 2);
+    }
     return;
   }
 
-  box(x, y, w, h, K_CBG, "#CBD2D9", rad);
+  box(x, y, w, h, K_CBG, "#64748B", rad);
   const col = (card.s === 2 || card.s === 3) ? K_RED : K_BLK;
   const rstr = RANKS[card.r - 1];
   const px = w >= 64 ? 6 : 3, py = w >= 64 ? 4 : 2;
