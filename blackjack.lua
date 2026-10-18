@@ -1,4 +1,4 @@
--- Blackjack 21 (Beta ver 1.2) — WADAMESH Lua app for LilyGo T-Deck, T-Display P4 (AMOLED/LCD), & MeshCore boards
+-- Blackjack 21 (Beta ver 1.2.1) — WADAMESH Lua app for LilyGo T-Deck, T-Display P4 (AMOLED/LCD), & MeshCore boards
 local ui, sys, store, timer = wada.ui, wada.sys, wada.store, wada.timer
 local C = ui.colors
 local app = {}
@@ -45,14 +45,14 @@ local function compute_layout()
  local s, l = math.min(W, H), math.max(W, H)
  portrait = (H > W)
  local aspect = l / math.max(1, s)
- if l >= 1185 or (W == 568 and H >= 900) or (W >= 1185 and H >= 460) or (portrait and W == 284 and H >= 560) then
+ if l >= 1185 or (W == 568 and H >= 900) or (W >= 1185 and H >= 460) then
   dev_name, is_p4, s2 = "T-Display P4 AMOLED", true, true
- elseif (l >= 1050 and l < 1185) or (W == 540 and H >= 900) or (W >= 500 and W < 560 and H >= 900) or (portrait and W == 270 and H >= 540) or (portrait and aspect > 1.9 and s >= 240 and s <= 300) then
+ elseif (l >= 1050 and l < 1185) or (W == 540 and H >= 900) or (W >= 500 and W < 560 and H >= 900) then
   dev_name, is_p4, s2 = "T-Display P4 LCD", true, true
  elseif l >= 700 or s >= 460 then
   dev_name, is_p4, s2 = "Large HD", false, true
  else
-  dev_name, is_p4, s2 = (W >= 440 and H < 320) and "Wide Compact" or ((portrait and W <= 260) and "Compact Portrait" or "T-Deck"), false, false
+  dev_name, is_p4, s2 = (W >= 440 and H < 320) and "Wide Compact" or ((portrait and aspect > 1.9 and s <= 300) and "T-Display P4" or ((portrait and W <= 280) and "Compact Portrait" or "T-Deck")), false, false
  end
  if s2 then f_sm, f_md, f_lg, f_xl, f_rk = 14, 16, 20, 24, 16
  else f_sm, f_md, f_lg, f_xl, f_rk = 12, 12, 14, 16, 12 end
@@ -60,7 +60,7 @@ local function compute_layout()
  if s2 then
   top_h, bot_h, pad, gap = I(math.max(lh_md + 16, 40)), portrait and I(math.max(lh_md + 42, 72)) or I(math.max(lh_md + 26, 54)), (portrait or is_p4) and 22 or 14, 8
  else
-  top_h, bot_h, pad, gap = I(math.max(lh_sm + 4, 20)), I(math.max(lh_sm + 14, 30)), (portrait or is_p4) and 20 or 6, 4
+  top_h, bot_h, pad, gap = I(math.max(lh_sm + 4, 20)), I(math.max(lh_sm + 14, 30)), 6, 4
  end
  tbl_h = math.max(80, H - top_h - bot_h)
  if is_p4 and portrait then
@@ -467,7 +467,7 @@ draw_screen = function()
 
  local tfsz = s2 and f_md or f_sm
  local tty = math.max(1, I((top_h - th(tfsz)) / 2))
- local top_margin = (portrait or is_p4) and 22 or pad
+ local top_margin = s2 and 22 or pad
  cv:text(top_margin, tty, string.format("BANK $%d", bank), K_GLD, tfsz)
 
  local abet = base_bet
@@ -588,7 +588,7 @@ draw_screen = function()
  cv:rect(0, by, W, bot_h, K_BAR, true); cv:line(0, by, W, by, 0x1F2933, 1)
  local nb = #btns
  if nb > 0 then
-  local btn_margin_x = (portrait or is_p4) and 18 or gap
+  local btn_margin_x = s2 and 18 or gap
   local avail_w = W - btn_margin_x * 2
   local pv, bfsz, brad = s2 and 8 or 3, s2 and f_md or f_sm, s2 and 6 or 4
   local bw = I((avail_w - (nb - 1) * gap) / nb)

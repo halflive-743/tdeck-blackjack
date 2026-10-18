@@ -305,6 +305,7 @@
   <div class="dev-pill" onclick="switchDevice('p4_port')">T-Display P4 LCD Portrait (540×1102)</div>
   <div class="dev-pill" onclick="switchDevice('p4_amoled_land')">T-Display P4 AMOLED (1232×502)</div>
   <div class="dev-pill" onclick="switchDevice('p4_amoled_port')">T-Display P4 AMOLED Portrait (568×1166)</div>
+  <div class="dev-pill" onclick="switchDevice('p4_compact')">T-Display P4 Compact (270×551)</div>
 </div>
 
 <div class="tdeck-device" id="device-shell">
@@ -316,7 +317,7 @@
   <div class="screen-wrap" id="screen-wrap">
     <div class="wada-bar">
       <span class="back">&lt; Apps</span>
-      <span style="font-weight:700;">Blackjack v1.1</span>
+      <span style="font-weight:700;">Blackjack v1.2.1</span>
       <span class="sys">CH 0 · 100%</span>
     </div>
     <canvas id="screen" width="320" height="208"></canvas>
@@ -379,6 +380,7 @@ const DEVICES = {
   p4_port:        { name: "T-Display P4 LCD Portrait", spec: "540×1102 · LCD", w: 540, h: 1102, shellW: 580 },
   p4_amoled_land: { name: "T-Display P4 AMOLED Landscape", spec: "1232×502 · AMOLED", w: 1232, h: 502, shellW: 1272 },
   p4_amoled_port: { name: "T-Display P4 AMOLED Portrait", spec: "568×1166 · AMOLED", w: 568, h: 1166, shellW: 608 },
+  p4_compact:     { name: "T-Display P4 Compact Viewport", spec: "270×551 · LCD/AMOLED", w: 270, h: 551, shellW: 310 },
 };
 
 let currentDev = DEVICES.tdeck;
@@ -512,14 +514,14 @@ function compute_layout() {
   const s = Math.min(W, H), l = Math.max(W, H);
   portrait = (H > W);
   const aspect = l / Math.max(1, s);
-  if (l >= 1185 || (W === 568 && H >= 900) || (W >= 1185 && H >= 460) || (portrait && W === 284 && H >= 560)) {
+  if (l >= 1185 || (W === 568 && H >= 900) || (W >= 1185 && H >= 460)) {
     dev_name = "T-Display P4 AMOLED"; is_p4 = true; s2 = true;
-  } else if ((l >= 1050 && l < 1185) || (W === 540 && H >= 900) || (W >= 500 && W < 560 && H >= 900) || (portrait && W === 270 && H >= 540) || (portrait && aspect > 1.9 && s >= 240 && s <= 300)) {
+  } else if ((l >= 1050 && l < 1185) || (W === 540 && H >= 900) || (W >= 500 && W < 560 && H >= 900)) {
     dev_name = "T-Display P4 LCD"; is_p4 = true; s2 = true;
   } else if (l >= 700 || s >= 460) {
     dev_name = "Large HD"; is_p4 = false; s2 = true;
   } else {
-    dev_name = (W >= 440 && H < 320) ? "Wide Compact" : ((portrait && W <= 260) ? "Compact Portrait" : "T-Deck");
+    dev_name = (W >= 440 && H < 320) ? "Wide Compact" : ((portrait && aspect > 1.9 && s <= 300) ? "T-Display P4" : ((portrait && W <= 280) ? "Compact Portrait" : "T-Deck"));
     is_p4 = false; s2 = false;
   }
 
@@ -534,7 +536,7 @@ function compute_layout() {
   } else {
     top_h = I(Math.max(lh_sm + 4, 20));
     bot_h = I(Math.max(lh_sm + 14, 30));
-    pad = (portrait || is_p4) ? 20 : 6; gap = 4;
+    pad = 6; gap = 4;
   }
   tbl_h = Math.max(80, H - top_h - bot_h);
 
@@ -930,7 +932,7 @@ function draw_screen() {
 
   const tfsz = s2 ? f_md : f_sm;
   const tty = Math.max(1, I((top_h - th(tfsz)) / 2));
-  const top_margin = (portrait || is_p4) ? 22 : pad;
+  const top_margin = s2 ? 22 : pad;
   ctx.fillStyle = K_GLD;
   ctx.font = `600 ${tfsz}px "JetBrains Mono", ui-monospace, Consolas, monospace`;
   ctx.textAlign = "left";
@@ -1075,7 +1077,7 @@ function draw_screen() {
 
   const nb = btns.length;
   if (nb > 0) {
-    const btn_margin_x = (portrait || is_p4) ? 18 : gap;
+    const btn_margin_x = s2 ? 18 : gap;
     const avail_w = W - btn_margin_x * 2;
     const pv = s2 ? 8 : 3, bfsz = s2 ? f_md : f_sm, brad = s2 ? 6 : 4;
     const bw = I((avail_w - (nb - 1) * gap) / nb), bh = bot_h - pv * 2, blh = th(bfsz);

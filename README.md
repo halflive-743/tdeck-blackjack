@@ -1,12 +1,13 @@
-# Blackjack 21 for WADAMESH (Lua 5.4) — v1.2 Beta
+# Blackjack 21 for WADAMESH (Lua 5.4) — v1.2.1 Beta
 
 A casino **Blackjack (21)** application built for **LilyGo T-Display P4 (AMOLED & LCD)**, **LilyGo T-Deck**, **Heltec V4**, **T-LoRa Pager**, and other MeshCore / WADAMESH boards using the on-device **WADAMESH Lua App SDK (`wada.*` API v1)**.
 
 ## Project Files
 
 - [`blackjack.lua`](blackjack.lua) — Standalone Lua app ready to copy to your device (31.2 KB).
-- [`blackjack.json`](blackjack.json) — WADAMESH app drawer / Store manifest (v1.2).
-- [`deploy/apps/blackjack/1.2/`](deploy/apps/blackjack/1.2) — Structured for USB serial sideloading (`scripts/sideload_app.py`) or Store deployment.
+- [`blackjack.json`](blackjack.json) — WADAMESH app drawer / Store manifest (v1.2.1).
+- [`deploy/apps/blackjack/1.2.1/`](deploy/apps/blackjack/1.2.1) — Structured for USB serial sideloading (`scripts/sideload_app.py`) or Store deployment.
+- [`deploy/apps/blackjack/1.2/`](deploy/apps/blackjack/1.2) — v1.2 reference bundle.
 - [`deploy/apps/blackjack/1.1/`](deploy/apps/blackjack/1.1) — v1.1 reference bundle.
 - [`deploy/apps/blackjack/1.0/`](deploy/apps/blackjack/1.0) — v1.0 reference bundle.
 - [`simulator.html`](simulator.html) — Interactive desktop browser simulator with hardware preview pills across all 7 target devices.
@@ -69,7 +70,7 @@ Passing the T-Display P4's native dimensions (`568×1166` or `540×1102`) direct
 ### Option 2: USB Serial Sideload (Without Removing SD Card)
 Using the WADAMESH repository's sideload script over USB serial:
 ```bash
-python scripts/sideload_app.py --port COM3 --reboot deploy/apps/blackjack/1.1
+python scripts/sideload_app.py --port COM3 --reboot deploy/apps/blackjack/1.2.1
 ```
 
 ---
