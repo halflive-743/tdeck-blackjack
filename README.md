@@ -1,4 +1,4 @@
-# Blackjack 21 for WADAMESH (Lua 5.4) — v1.2.2 Beta
+# Blackjack 21 for WADAMESH (Lua 5.4) — v1.2.2
 
 A casino **Blackjack (21)** application built for **LilyGo T-Display P4 (AMOLED & LCD)**, **LilyGo T-Deck**, **Heltec V4**, **T-LoRa Pager**, and other MeshCore / WADAMESH boards using the on-device **WADAMESH Lua App SDK (`wada.*` API v1)**.
 
