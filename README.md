@@ -1,11 +1,11 @@
-# Blackjack 21 for WADAMESH (Lua 5.4) — v1.2.2
+# Blackjack 21 for WADAMESH (Lua 5.4) — v1.2.3
 
-A casino **Blackjack (21)** application built for **LilyGo T-Display P4 (AMOLED & LCD)**, **LilyGo T-Deck**, **Heltec V4**, **T-LoRa Pager**, and other MeshCore / WADAMESH boards using the on-device **WADAMESH Lua App SDK (`wada.*` API v1)**.
+A casino **Blackjack (21)** application built for **LilyGo T-Display P4 (AMOLED & LCD)**, **LilyGo T-Deck**, **ThinkNode M9**, **T-LoRa Pager**, and other MeshCore / WADAMESH boards using the on-device **WADAMESH Lua App SDK (`wada.*` API v1)**.
 
 ## Project Files
 
 - [`blackjack.lua`](blackjack.lua) — Standalone Lua app ready to copy to your device (32.3 KB).
-- [`blackjack.json`](blackjack.json) — WADAMESH app drawer / Store manifest (v1.2.2).
+- [`blackjack.json`](blackjack.json) — WADAMESH app drawer / Store manifest (v1.2.3).
 - [`deploy/apps/blackjack/1.2.2/`](deploy/apps/blackjack/1.2.2) — Structured for USB serial sideloading (`scripts/sideload_app.py`) or Store deployment.
 - [`deploy/apps/blackjack/1.2.1/`](deploy/apps/blackjack/1.2.1) — v1.2.1 reference bundle.
 - [`deploy/apps/blackjack/1.2/`](deploy/apps/blackjack/1.2) — v1.2 reference bundle.
@@ -27,7 +27,7 @@ A casino **Blackjack (21)** application built for **LilyGo T-Display P4 (AMOLED 
 | **LilyGo T-Display P4 LCD** (Portrait) | `540 × 1168` (HI8561) | `540 × 1102` | `2 × 3` tiles (`270 × 368`) | `94 × 131` px | `14 / 16 / 20 / 24` |
 | **LilyGo T-Display P4 LCD** (Landscape) | `1168 × 540` (HI8561) | `1168 × 474` | `3 × 1` tiles (`390 × 474`) | `79 × 110` px | `14 / 16 / 20 / 24` |
 | **LilyGo T-Deck / T-Deck Plus** | `320 × 240` | `320 × 208` | `1` canvas (`320 × 208`) | `34 × 45` px | `12 / 14 / 16` |
-| **Heltec V4 / Compact Portrait** | `240 × 320` | `240 × 244` | `1` canvas (`240 × 244`) | `38 × 52` px | `12 / 14 / 16` |
+| **ThinkNode M9 / Portrait** | `240 × 320` | `240 × 244` | `1` canvas (`240 × 244`) | `38 × 52` px | `12 / 14 / 16` |
 | **LilyGo T-LoRa Pager** | `480 × 222` | `480 × 178` | `1` canvas (`480 × 178`) | `34 × 42` px | `12 / 14 / 16` |
 
 ### Why T-Display P4 Needed a Tiled Virtual Canvas
@@ -71,7 +71,7 @@ Passing the T-Display P4's native dimensions (`568×1166` or `540×1102`) direct
 ### Option 2: USB Serial Sideload (Without Removing SD Card)
 Using the WADAMESH repository's sideload script over USB serial:
 ```bash
-python scripts/sideload_app.py --port COM3 --reboot deploy/apps/blackjack/1.2.2
+python scripts/sideload_app.py --port COM3 --reboot deploy/apps/blackjack/1.2.3
 ```
 
 ---
@@ -86,7 +86,9 @@ python scripts/sideload_app.py --port COM3 --reboot deploy/apps/blackjack/1.2.2
 | **Keyboard `D`** | **Double Down** (during play) or **Deal** (between rounds) |
 | **Keyboard `P`** | **Split** pair |
 | **Keyboard `B`** | Return to **Betting** screen after a hand |
-| **Keyboard `W` / `Z` or `+` / `-`** | Increase / Decrease wager by `$10` |
+| **Keyboard `W` / `Z` or `+` / `-` or `↑` / `↓`** | Increase / Decrease wager by `$10` (betting/done) or Hit / Stand (playing) |
+| **Keyboard `1` / `2`** | Adjust wager by `±$50` |
+| **D-Pad / Arrow Navigation** | Left / Right cycles buttons; Up / Down bets or Hit / Stand |
 | **Keyboard `X` / `C`** | **Max** bet / **Clear** to minimum bet (`$10`) |
 | **Keyboard `A` / `L`** | Move button highlight left / right |
 | **Keyboard `Enter` / `Space`** | Activate highlighted button |

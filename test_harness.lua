@@ -80,7 +80,15 @@ local function mock_wada(w, h)
         toasts[#toasts + 1] = tostring(msg)
       end,
       beep = function() return true end,
-      board = function() return { w = w, h = h, touch = true, keyboard = true, trackball = true } end,
+      board = function()
+        local b = { w = w, h = h, touch = true, keyboard = true, trackball = true }
+        if w == 240 and (h == 244 or h == 320) then
+          b.name = "ThinkNode M9"
+          b.model = "Elecrow ThinkNode M9"
+          b.touch = false
+        end
+        return b
+      end,
       caps = function() return { sdk_ext = true, keyboard = true, touch = true, widget = true } end,
     },
     store = {
@@ -124,7 +132,8 @@ end
 
 local devices = {
   { name = "LilyGo T-Deck",                   w = 320,  h = 208  },
-  { name = "Heltec V4 Portrait",              w = 240,  h = 244  },
+  { name = "ThinkNode M9",                    w = 240,  h = 244  },
+  { name = "ThinkNode M9 (Full 240x320)",     w = 240,  h = 320  },
   { name = "LilyGo T-LoRa Pager",             w = 480,  h = 178  },
   { name = "LilyGo T-Display P4 Compact (Port)", w = 270, h = 551 },
   { name = "LilyGo T-Display P4 LCD (Port)",  w = 540,  h = 1102 },

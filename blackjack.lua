@@ -1,10 +1,10 @@
--- Blackjack 21 (ver 1.2.2) — WADAMESH Lua app for LilyGo T-Deck, T-Display P4 (AMOLED/LCD), & MeshCore boards
+-- Blackjack 21 (ver 1.2.3) — WADAMESH Lua app for LilyGo T-Deck, ThinkNode M9, T-Display P4 (AMOLED/LCD), & MeshCore boards
 local ui, sys, store, timer = wada.ui, wada.sys, wada.store, wada.timer
 local C = ui.colors
 local app = {}
 
 local W, H, cv = 320, 208, nil
-local dev_name, is_p4, portrait, s2 = "T-Deck", false, false, false
+local dev_name, is_p4, is_m9, portrait, s2 = "T-Deck", false, false, false, false
 local top_h, bot_h, tbl_h, cw, ch, ov, s_ov = 20, 30, 158, 34, 46, 20, 16
 local p_sm, p_lg, f_sm, f_md, f_lg, f_xl, f_rk = 3, 5, 12, 12, 14, 16, 12
 local lh_sm, lh_md, lh_lg, lh_xl, pad, gap = 16, 16, 18, 20, 6, 4
@@ -54,7 +54,7 @@ local function compute_layout()
  elseif (portrait and aspect > 1.9 and s <= 300) or is_p4 then
   dev_name, is_p4, s2 = "T-Display P4", true, false
  else
-  dev_name, is_p4, s2 = (W >= 440 and H < 320) and "Wide Compact" or ((portrait and W <= 280) and "Compact Portrait" or "T-Deck"), false, false
+  dev_name, is_p4, s2 = (W >= 440 and H < 320) and "Wide Compact" or ((is_m9 or (portrait and W <= 280)) and "ThinkNode M9" or "T-Deck"), false, false
  end
  if s2 then f_sm, f_md, f_lg, f_xl, f_rk = 14, 16, 20, 24, 16
  else f_sm, f_md, f_lg, f_xl, f_rk = 12, 12, 14, 16, 12 end
@@ -529,7 +529,7 @@ draw_screen = function()
    tcx(cx, wy + I((ph - lh_xl) / 2), wlbl, C.text, f_xl)
    local hy = by + bh - lh_sm - (portrait and 16 or 8)
    if hy > wy + ph + 4 then
-    tcx(cx, hy, W >= 300 and "Tap buttons or [Up/Down] Bet  [D] Deal" or "Tap buttons below to Bet & Deal", C.sub, f_sm)
+    local hint = (is_m9 or dev_name == "ThinkNode M9") and "[Up/Down] Bet  ·  [D] Deal" or (W >= 300 and "Tap buttons or [Up/Down] Bet  [D] Deal" or "Tap buttons below to Bet & Deal"); tcx(cx, hy, hint, C.sub, f_sm)
    end
   end
  else
@@ -661,7 +661,7 @@ function app.on_open(w, h)
  W = I((w and w > 0) and w or ((brd.w and brd.w > 0) and brd.w or 320))
  H = I((h and h > 0) and h or ((brd.h and brd.h > 0) and brd.h or 208))
  local bname = string.lower(tostring(brd.name or brd.model or brd.board or ""))
- if bname:find("p4") then is_p4 = true end
+ if bname:find("p4") then is_p4 = true end; if bname:find("thinknode") or bname:find("m9") then is_m9 = true end
  compute_layout()
  bank      = I(tonumber(store.get("bank", START_BANK)) or START_BANK)
  best_bank = I(tonumber(store.get("best", START_BANK)) or START_BANK)
@@ -711,10 +711,10 @@ function app.on_input(ev)
   if k == "left" or k == "a" then cycle_focus(-1)
   elseif k == "right" or k == "l" then cycle_focus(1)
   elseif k == "up" or k == "w" or k == "+" or k == "=" then
-   if state == "betting" or state == "done" then adjust_bet(10) end
+   if state == "betting" or state == "done" then adjust_bet(10) elseif state == "player" then do_hit() end
   elseif k == "down" or k == "z" or k == "-" then
-   if state == "betting" or state == "done" then adjust_bet(-10) end
-  elseif k == "enter" or k == " " then
+   if state == "betting" or state == "done" then adjust_bet(-10) elseif state == "player" then do_stand() end
+  elseif k == "1" then if state == "betting" or state == "done" then adjust_bet(-50) end elseif k == "2" then if state == "betting" or state == "done" then adjust_bet(50) end elseif k == "enter" or k == "return" or k == "ok" or k == " " or k == "\n" or k == "\r" then
    local b = btns[f_idx]; if b and b.enabled and b.fn then b.fn() end
   elseif k == "m" then
    sound_on = not sound_on; sys.toast(sound_on and "Sound ON" or "Sound OFF"); draw_screen()

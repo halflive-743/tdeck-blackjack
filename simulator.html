@@ -299,7 +299,7 @@
 
 <div class="device-bar">
   <div class="dev-pill active" onclick="switchDevice('tdeck')">LilyGo T-Deck (320×208)</div>
-  <div class="dev-pill" onclick="switchDevice('heltec')">Heltec V4 (240×244)</div>
+  <div class="dev-pill" onclick="switchDevice('m9')">ThinkNode M9 (240×244)</div>
   <div class="dev-pill" onclick="switchDevice('pager')">T-LoRa Pager (480×178)</div>
   <div class="dev-pill" onclick="switchDevice('p4_land')">T-Display P4 LCD (1168×474)</div>
   <div class="dev-pill" onclick="switchDevice('p4_port')">T-Display P4 LCD Portrait (540×1102)</div>
@@ -317,7 +317,7 @@
   <div class="screen-wrap" id="screen-wrap">
     <div class="wada-bar">
       <span class="back">&lt; Apps</span>
-      <span style="font-weight:700;">Blackjack v1.2.2</span>
+      <span style="font-weight:700;">Blackjack v1.2.3</span>
       <span class="sys">CH 0 · 100%</span>
     </div>
     <canvas id="screen" width="320" height="208"></canvas>
@@ -374,7 +374,7 @@ const toastEl = document.getElementById('toast');
 
 const DEVICES = {
   tdeck:          { name: "LilyGo T-Deck", spec: "320×208 · MESHCORE", w: 320, h: 208, shellW: 368 },
-  heltec:         { name: "Heltec V4", spec: "240×244 · TFT", w: 240, h: 244, shellW: 288 },
+  m9:             { name: "ThinkNode M9", spec: "240×244 · TFT Non-Touch", w: 240, h: 244, shellW: 288 },
   pager:          { name: "LilyGo T-LoRa Pager", spec: "480×178 · KEYPAD", w: 480, h: 178, shellW: 528 },
   p4_land:        { name: "T-Display P4 LCD Landscape", spec: "1168×474 · LCD", w: 1168, h: 474, shellW: 1208 },
   p4_port:        { name: "T-Display P4 LCD Portrait", spec: "540×1102 · LCD", w: 540, h: 1102, shellW: 580 },
@@ -523,7 +523,7 @@ function compute_layout() {
   } else if ((portrait && aspect > 1.9 && s <= 300) || is_p4) {
     dev_name = "T-Display P4"; is_p4 = true; s2 = false;
   } else {
-    dev_name = (W >= 440 && H < 320) ? "Wide Compact" : ((portrait && W <= 280) ? "Compact Portrait" : "T-Deck");
+    dev_name = (W >= 440 && H < 320) ? "Wide Compact" : ((portrait && W <= 280) ? "ThinkNode M9" : "T-Deck");
     is_p4 = false; s2 = false;
   }
 
@@ -1003,7 +1003,7 @@ function draw_screen() {
 
       const hy = by + bh - lh_sm - (portrait ? 16 : 8);
       if (hy > wy + ph + 4) {
-        tcx(cx, hy, W >= 300 ? "Tap buttons or [Up/Down] Bet  [D] Deal" : "Tap buttons below to Bet & Deal", K_SUB, f_sm);
+        tcx(cx, hy, (dev_name === "ThinkNode M9") ? "[Up/Down] Bet  ·  [D] Deal" : (W >= 300 ? "Tap buttons or [Up/Down] Bet  [D] Deal" : "Tap buttons below to Bet & Deal"), K_SUB, f_sm);
       }
     }
   } else {
@@ -1160,7 +1160,11 @@ function triggerKey(k) {
   } else if (k === "down" || k === "z" || k === "-") {
     if (state === "betting" || state === "done") adjust_bet(-10);
     else if (state === "player") do_stand();
-  } else if (k === "enter" || k === " ") {
+  } else if (k === "1") {
+    if (state === "betting" || state === "done") adjust_bet(-50);
+  } else if (k === "2") {
+    if (state === "betting" || state === "done") adjust_bet(50);
+  } else if (k === "enter" || k === "return" || k === "ok" || k === " ") {
     const b = btns[f_idx - 1];
     if (b && b.enabled && b.fn) b.fn();
   } else if (k === "m") {
